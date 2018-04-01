@@ -1,0 +1,100 @@
+<apex:page controller="RoomsAgendaController" id="thePage" tabStyle="Event__c">
+    
+     <!-- Scripts -->
+    <apex:includeScript value="{!URLFOR($Resource.jQuery_UI,'/jquery-ui-1.10.3.custom/js/jquery-3.2.1.min.js')}"/>  
+
+     <apex:includeScript value="{!URLFOR($Resource.jQuery_UI,'/jquery-ui-1.10.3.custom/js/jquery-ui-1.10.3.custom.min.js')}"/>
+   
+    <!-- Stylings -->
+     <apex:stylesheet value="{!URLFOR($Resource.jQuery_UI, '/jquery-ui-1.10.3.custom/css/ui-lightness/jquery-ui-1.10.3.custom.min.css')}"/>
+
+     <script type="text/javascript">
+     	var j$ = jQuery.noConflict();        
+        function buttonsEnabled(enabled){
+            var $buttons = jQuery('.btn');
+            if (enabled === false) {
+                // add the btnDisabled class to give it the look of being disabled
+                // add the disabled attribute to actually disable interactability
+                $buttons.toggleClass('btnDisabled', true).attr('disabled', 'disabled');
+            } else {
+                // remove the css class and the disabled attribute
+                $buttons.toggleClass('btnDisabled', false).attr('disabled', null);
+            }
+        }
+
+		j$( document ).ready(function() {
+		    j$(".noSecondHeader").addClass("titleText");			    		        	    
+		});
+		    
+		</script>
+		    
+    <style>
+        .dateFormat{
+            display:none;
+        }
+
+        .titleText{                    
+            color: #002b7f !important;   
+            font-weight:bold !important;      
+        }
+
+    </style>
+       
+    <apex:sectionHeader title="Room Agenda" id="roomagenda"/>     
+    <apex:form id="THEFORM">
+        <apex:pageMessages id="MESSAGES"></apex:pageMessages>
+        <apex:pageBlock title="Room Agenda Edit" id="pb" rendered="{!res!=null && res.Id!=null}">
+            <apex:pageBlockButtons >
+                <apex:commandButton value="Save" onclick="buttonsEnabled(false);" action="{!saveRec}" oncomplete="buttonsEnabled(true);" reRender="THEFORM"/>
+                <apex:commandButton value="Add Room" action="{!addNew}" reRender="THEFORM" immediate="true"/>              
+                <apex:commandButton value="Back" action="{!BackToEvent}" rerender="THEFORM" immediate="true"/>
+            </apex:pageBlockButtons>
+            <!--<apex:outputPanel id="relRes">-->
+                <apex:pageBlockTable value="{!clstGI}" var="gi" id="pbt">                    
+   			    <apex:column headerValue="Name">
+                        <apex:outputLink value="/{!gi.res.Id}" target="__blank" rendered="{!gi.res.Id!=null}"  style="{!IF(gi.cErrorHighlight!=null && gi.cErrorHighlight!='','background-color: #FF0039;','')}">{!gi.res.Name}</apex:outputLink>
+                        <apex:outputPanel rendered="{!gi.res.Id==null}">
+                            <div class="requiredInput">
+                                <div class="requiredBlock"/>
+                                <apex:inputField value="{!gi.res.Name}" style="{!IF(gi.cErrorHighlight!=null && gi.cErrorHighlight!='','background-color: #FF0039;','')}"/>
+                            </div>
+                        </apex:outputPanel>
+                    </apex:column>
+                    <apex:column headerValue="Function">
+                        <apex:inputField value="{!gi.res.Function__c}"/>
+                    </apex:column>
+                    <apex:column headerValue="Start Time">
+                        <div class="requiredInput">
+                            <div class="requiredBlock"/>
+                            <apex:inputField value="{!gi.res.StartTime__c}"  style="{!IF(gi.cErrorHighlight!=null && gi.cErrorHighlight!='','background-color: #FF0039;','')}"/>
+                        </div>
+                    </apex:column>
+                    <apex:column headerValue="End Time">
+                        <div class="requiredInput">
+                            <div class="requiredBlock"/>
+                            <apex:inputField value="{!gi.res.EndTime__c}"  style="{!IF(gi.cErrorHighlight!=null && gi.cErrorHighlight!='','background-color: #FF0039;','')}"/>
+                        </div>
+                    </apex:column>
+                    <apex:column headerValue="Room">
+                        <apex:outputPanel >
+                            <div class="requiredInput">
+                                <div class="requiredBlock"></div>
+                                <apex:inputField value="{!gi.res.Location__c}"  style="{!IF(gi.cErrorHighlight!=null && gi.cErrorHighlight!='','background-color: #FF0039;','')}"/>
+                            </div>
+                        </apex:outputPanel>
+                    </apex:column>
+                    
+                    <apex:column headerValue="Setup Type">
+                        <apex:inputField value="{!gi.res.Setup_Type__c}"/>
+                    </apex:column>
+                    <apex:column headerValue="Min Guarantee">
+                        <apex:inputField value="{!gi.res.Minimum_Guarantee_Guests__c}" />
+                    </apex:column>
+                    <apex:column headerValue="Set">
+                        <apex:inputField value="{!gi.res.Max_Seats__c}" />
+                    </apex:column>                    
+                </apex:pageBlockTable>
+            <!--</apex:outputPanel>-->
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>

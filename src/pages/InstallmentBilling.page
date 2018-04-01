@@ -1,0 +1,439 @@
+<apex:page showHeader="true" sidebar="true" extensions="ApplyDuesController" standardController="Member_Dues__c">
+    <apex:includescript value="{!URLFOR($Resource.jqueryDatatable_3embed,'/3embed/jquery-1.11.1.min.js')}" />
+    <apex:stylesheet value="{!URLFOR($Resource.fontawesome,'/css/font-awesome.css')}"/>
+    <apex:stylesheet value="{!URLFOR($Resource.foretees, '/ProgressBar/progressbar.css')}"/>
+    <apex:stylesheet value="{!URLFOR($Resource.foretees, '/main.css')}"/>
+
+    <apex:sectionHeader title="Due Setup" subtitle="{!currentBillingObj.Name}" />
+    <apex:outputLink id="link" styleClass="tooltip" value="/{!currentBillingObj.id}">{!JSENCODE(HTMLENCODE(currentBillingObj.Name))} </apex:outputLink>&nbsp; <i class="fa fa-angle-right" aria-hidden="true"></i>&nbsp; {!JSENCODE(HTMLENCODE(currentBillingObj.Name))} Setup
+    <br/> <br/> 
+
+    <script>
+
+            $(document).ready(function(){
+              calculateAnnualAmount();
+              if('{!JSENCODE(HTMLENCODE(currentBillingObj.Default_Billing_Frequency__c))}'!='Installment' && '{!JSENCODE(HTMLENCODE(currentBillingObj.Default_Billing_Frequency__c))}'!='Monthly'){
+                var initialObj;  
+                $(".DistributionTable tbody tr").each(function () {
+                  $(this).find('td').each (function() {
+                    var amount = 0;
+                    if($(this).find(":input").val()!=undefined && $(this).find(":input").val()!='undefined'){
+                      var isnum = !isNaN($(this).find(":input").val().replace(/,/g, '')) && isFinite($(this).find(":input").val().replace(/,/g, ''));
+                      if(isnum)
+                        amount = $(this).find(":input").val().replace(/,/g, '');
+                      if((amount>0)){
+                        initialObj = $(this).find(":input");
+                        return false;
+                      }
+                    } 
+                  })
+                })
+                if(initialObj!=undefined)
+                  setupTableForBF(initialObj);
+              }
+              checkAnnualAmount();
+            });
+
+            // check afor 0 annual amount
+            function checkAnnualAmount()
+            {
+              if(parseFloat('{!JSENCODE(HTMLENCODE(TEXT(currentBillingObj.Primary_Annual_Amount__c)))}')<=0)
+                disableAllIfNoAnnualAmount('Primary');
+              if(parseFloat('{!JSENCODE(HTMLENCODE(TEXT(currentBillingObj.Dependent_Annual_Amount__c)))}')<=0)
+                disableAllIfNoAnnualAmount('Dependent');
+              if(parseFloat('{!JSENCODE(HTMLENCODE(TEXT(currentBillingObj.Spouse_Partner_Annual_Amount__c)))}')<=0)
+                disableAllIfNoAnnualAmount('Spouse');
+            }
+
+            // method to disable the fields if no annual amount is there to distribute
+            function disableAllIfNoAnnualAmount(columnName)
+            {
+              if(columnName=='Primary') $('#PrimaryNumber').prop( "disabled", true );
+              if(columnName=='Spouse') $('#SpouseNumber').prop( "disabled", true );
+              if(columnName=='Dependent') $('#DependentNumber').prop( "disabled", true );
+              $('.'+priSpoDepMap[columnName]).each(function(){
+                $(this).prop( "disabled", true );
+              })
+            }    
+
+            // save only due application
+            function saveTopPart()
+            {        
+              saveSetupAF(null,'confirm');
+            }
+
+            //Validaate and autodetect values for grid from january to december for due type 
+            function calculateAmount(anualAmount,className,remainingAmount,txtobj)
+            {
+              var amount;
+              var isnum;
+              if($(txtobj).val()!=''){
+                isnum = !isNaN(parseFloat($(txtobj).val())) && isFinite($(txtobj).val());
+                if(isnum){    
+                  amount = parseFloat($(txtobj).val().replace(/,/g, ''));
+                }
+                else{
+                  alert('Entry valid amount here.')    
+                  $(txtobj).val('0.00');
+                  return;    
+                } 
+              }
+              else
+              {
+                amount = 0.00;
+              } 
+
+              if('{!JSENCODE(HTMLENCODE(currentBillingObj.Default_Billing_Frequency__c))}'!='Installment' && '{!JSENCODE(HTMLENCODE(currentBillingObj.Default_Billing_Frequency__c))}'!='Monthly') {
+                if(amount!=null && amount>0)
+                  setupTableForBF(txtobj);
+                else{
+                  var notEnable = true;
+                  $(".DistributionTable tbody tr").each(function () {
+                    $(this).find('td').each (function() {
+                      if(!($(this).find(":input").prop( "disabled")))
+                        if(parseFloat($(this).find(":input").val())>0)
+                          notEnable = false;
+                      })
+                  })
+                  if(notEnable)
+                    enableAll();    
+                }
+              }     
+              
+              var primarySum=0.00;
+              var amountToDestribute=(Number($('#'+anualAmount).find('b').html())).toFixed(2);          
+              $('.'+className).each(function(i, obj) {
+                var num   
+                if($(obj).val()!=''){   
+                  num = parseFloat($(obj).val().replace(/,/g, ''));
+                }
+                else  
+                  num = 0.00;                               
+                primarySum=primarySum+num;              
+
+              }); 
+              primarySum=primarySum-amount; 
+              if(primarySum>amountToDestribute)
+              {    
+                amount=0.00;                          
+              }
+              else 
+              {
+                primarySum = primarySum + amount;
+                if(primarySum>amountToDestribute)
+                {
+                  alert("The distributed amount of this due does not equal the total due amount.\nPlease re-distribute the due and save.");
+                  primarySum = primarySum - amount;
+                  amountRequired = amountToDestribute-primarySum;                    
+                  primarySum = primarySum + amountRequired;
+                  amount = amountRequired;
+                  $(txtobj).val(amount);                
+                }
+              }        
+              $('#'+remainingAmount).find('b').html((amountToDestribute-primarySum).toFixed(2)); 
+            }
+
+            // fix the amount to decimal places
+            function fixAmount(txtObj)
+            {
+              var obj;
+              if($(txtObj).val()=='')
+                obj = 0.00;
+              else
+                obj = parseFloat($(txtObj).val().replace(/,/g, ''));
+              $(txtObj).val(obj.toFixed(2));
+            }
+
+            var monthsList = new Array("January","February","March","April","May","June","July","August","September","October","November","December");
+
+            // setup the table as per the default billing frquency
+            function setupTableForBF(txtObj)
+            {
+              var index = monthsList.indexOf(($(txtObj.closest('tr'))).attr('Class'));
+              $(".DistributionTable tbody tr").each(function () {
+                if(monthsList.indexOf($(this).attr('Class'))!=index) { 
+                  $(this).find('td').each (function() {
+                    $(this).find(":input").prop( "disabled", true );
+                  })
+                }
+              })
+
+              if('{!JSENCODE(HTMLENCODE(currentBillingObj.Default_Billing_Frequency__c))}'=='Quaterly')
+              { 
+                for(var i=0; i<=3; i++)
+                {
+                  index = index + 3;
+                  if(index>11)
+                  {
+                    index = index -12;
+                  }
+                  var trElement = $('.'+monthsList[index]);
+                  $(trElement).find('td').each (function() {
+                    $(this).find(":input").prop( "disabled", false );
+                  })
+                }
+              }
+              if('{!JSENCODE(HTMLENCODE(currentBillingObj.Default_Billing_Frequency__c))}'=='Semi-Annual')
+              {
+               index = index + 6;
+               if(index>11)
+               {
+                index = index -12;
+              }
+              var trElement = $('.'+monthsList[index]);
+              $(trElement).find('td').each (function() {
+                $(this).find(":input").prop( "disabled", false );
+              })
+            }
+            checkAnnualAmount();
+          }
+
+          // enable all cells in distribution table
+          function enableAll()
+          {
+            $(".DistributionTable tbody tr").each(function () {
+              $(this).find('td').each (function() {
+                $(this).find(":input").prop( "disabled", false );
+              })
+            })
+            checkAnnualAmount();
+          }
+
+          var priSpoDepMap = {"Primary":"primaryamount","Spouse":"spouseamount", "Dependent":"dependentamount"}
+
+          // methods tho copy amount in each enabled cells and distribute it well
+          function copyAmounts(columnName)
+          {
+            var amountToCopy = $('#'+columnName+'Number').val();
+            var numberRegex = /^[+]?\d+(\.\d+)?([eE][+]?\d+)?$/;
+            var checkAnnualAmount;
+
+            if(!numberRegex.test(amountToCopy)) {
+              alert('Please enter valid positive number to copy in each month.');
+              var fillcopy =0.00;
+              $('.'+priSpoDepMap[columnName]).each(function(){
+                if(!$(this).prop('disabled'))
+                {
+                  fillcopy = $(this).val();
+                  return false;
+                }
+              })
+              $('#'+columnName+'Number').val(fillcopy);
+              return;
+            }
+            else{
+              amountToCopy = parseFloat(amountToCopy).toFixed(2);
+              $('#'+columnName+'Number').val(amountToCopy);
+            }
+
+            var isdisabled = false;
+            if($( "."+priSpoDepMap[columnName])!=null && $( "."+priSpoDepMap[columnName]).prop('disabled'))
+            {
+              isdisabled = true;
+            }
+            if('{!JSENCODE(HTMLENCODE(currentBillingObj.Default_Billing_Frequency__c))}'!='Installment' && '{!JSENCODE(HTMLENCODE(currentBillingObj.Default_Billing_Frequency__c))}'!='Monthly') {
+             if(!isdisabled){
+              setupTableForBF($('.DistributionTable tbody tr:first-child').find('.primaryamount'));
+            }
+          }  
+
+          var annualAmount;
+          if(columnName=='Primary')
+            annualAmount = $('#primaryanualamount').text();
+          else if(columnName=='Spouse')
+            annualAmount = $('#spouseanualamount').text();
+          else if(columnName=='Dependent')
+            annualAmount = $('#dependentanualamount').text();
+
+
+          var amountDistributed = 0;
+          $('.'+priSpoDepMap[columnName]).each(function(){
+            if(!$(this).prop('disabled'))
+            {
+              var checkAnnualAmount = annualAmount - amountToCopy;
+              if(checkAnnualAmount>=0){
+                $(this).val(parseFloat(amountToCopy).toFixed(2));
+                amountDistributed = parseFloat(amountDistributed) + parseFloat(amountToCopy);
+                annualAmount=annualAmount - amountToCopy;
+              }
+              else{
+                if(annualAmount>0){
+                  $(this).val(parseFloat(annualAmount).toFixed(2));
+                  annualAmount=0;
+                }
+                else{
+                  $(this).val(parseFloat(annualAmount).toFixed(2));
+                }
+              }
+            }
+          })
+          calculateAnnualAmount();
+        }
+
+        // clear all the cells on distribution table and enable all cells
+        function clearAll()
+        {
+          $(".DistributionTable tbody tr").each(function () {
+            $(this).find('td').each (function() {
+              $(this).find(":input").val('0.00');
+            })
+          })
+          enableAll();
+          calculateAnnualAmount();
+        }
+
+        // method calls on cancel
+        function back()
+        {
+          window.location = '/{!JSENCODE(HTMLENCODE(currentBillingObj.id))}'
+        }
+
+        // method to calculate total annual amount and update the summary table
+        function calculateAnnualAmount()
+        {
+          calculateAmount('primaryanualamount','primaryamount','primaryremainingamount',$().add('<input type="text"/>'));
+          calculateAmount('spouseanualamount','spouseamount','spouseremainingamount',$().add('<input type="text"/>'));
+          calculateAmount('dependentanualamount','dependentamount','dependentremaingamount',$().add('<input type="text"/>'));
+        }
+
+        if('{!isOneTime}'=='true'){
+          alert('One time dues should not be distributed.');
+          back();
+        }
+        
+    </script>
+
+    <apex:actionStatus id="WORKING" >
+        <apex:facet name="start">
+            <div class="waitingSearchDiv" style="background-color: #000;
+                height: 100%;filter: alpha(opacity=50);opacity:0.5;width:100%;">
+            </div>
+            <div class="waitingSearchDiv" style="z-index:999;width:100%">
+                <div class="waitingHolder" style="z-index:999;top: 175px; left: 20px; width: 200px;height: 25px;background-color: #fff;border: 1px solid black;border-radius: 5px;padding-top: 10px;color: #000;">
+                    <span class="waitingDescription" style="color:#000;">Working...</span>
+                    <img class="waitingImage" src="/img/loading.gif" title="Please Wait..." />
+                </div>
+            </div>
+        </apex:facet>
+    </apex:actionStatus>
+    <apex:form id="frm">
+        <apex:actionFunction status="WORKING" name="saveSetupAF" action="{!saveSetup}" reRender="memType">      
+            <apex:param id="anode" name="node" value="" />
+            <apex:param name="type" value="" assignTo="{!actionToPerform}"/>
+       </apex:actionFunction>
+
+        <apex:pageBlock >
+            <apex:pageMessages id="Msg"/>
+            <apex:outputPanel styleClass="head" id="memType">
+            <apex:pageBlockSection title="Auto Apply to Membership Types">
+                <c:MultiselectPicklist leftLabel="All Available Membership Types" 
+                                                           leftOption="{!allCategories}"
+                                                           rightLabel="Selected Membership Types"
+                                                           rightOption="{!selectedCategories}"
+                                                           size="10"
+                                                           width="200px" 
+                                                            /> 
+            </apex:pageBlockSection>
+            <script>
+
+              $(function() {
+                
+                if ('{!JSENCODE(HTMLENCODE(actionToPerform))}'=='confirm' && '{!JSENCODE(HTMLENCODE(removedCatString))}' !='' && '{!isDistributionFailed}'=='false') {
+                  if(confirm('Are you sure you would like to remove this due from all member accounts with the selected type(s).'))
+                    saveSetupAF(null,'save');
+                  else{
+                    saveSetupAF(null,'');
+                    if('{!distributionSuccess}'=='true'){
+                     alert('Anyway distributions are saved successfully.');
+                     window.location = '{!$Page.BillingTableSetupDetail}?id={!currentBillingObj.id}'
+                   }
+                 }
+               }
+               else if('{!JSENCODE(HTMLENCODE(actionToPerform))}'=='confirm' && '{!JSENCODE(HTMLENCODE(removedCatString))}' == '' && '{!isDistributionFailed}'=='false')
+               {
+                saveSetupAF(null,'save');
+               }
+               if('{!isDistributionFailed}'=='true')
+               {
+                  alert('The distributed amount of this due does not equal the total due amount.\nPlease re-distribute the due and save.');
+               }
+            }); 
+            
+            </script>
+            </apex:outputPanel>
+                <apex:pageBlockSection >
+                    <table class="topTable"> 
+                        <tbody> 
+                            <tr>
+                                <td style="width:10%;"></td>
+                                <td style="width:60%;"><apex:commandButton onclick="saveTopPart(); return false" value="Save Due Application"/></td> 
+                            </tr>
+                        </tbody>
+                    </table>
+                </apex:pageBlockSection> 
+        </apex:pageBlock>
+
+        <apex:PageBlock >
+            <apex:outputPanel styleClass="head">
+                <br/>
+                <apex:pageBlockSection title="Distribution summary" columns="1" collapsible="true">
+                    <br/>
+                    <table class="headertable">         
+                     <tr>
+                         <td>Primary Amount to distribute: {!JSENCODE(HTMLENCODE(currencySymbol))} <span id="primaryanualamount"><b>{!JSENCODE(HTMLENCODE(TEXT(currentBillingObj.Primary_Annual_Amount__c)))}</b></span></td>
+                         <td>Spouse/Partner Amount to distribute: {!JSENCODE(HTMLENCODE(currencySymbol))} <span id="spouseanualamount"><b>{!JSENCODE(HTMLENCODE(TEXT(currentBillingObj.Spouse_Partner_Annual_Amount__c)))}</b></span></td>
+                         <td>Dependent Amount to distribute: {!JSENCODE(HTMLENCODE(currencySymbol))} <span id="dependentanualamount"><b>{!JSENCODE(HTMLENCODE(TEXT(currentBillingObj.Dependent_Annual_Amount__c)))}</b></span></td>
+                     </tr>
+                     
+                      <tr>
+                         <td>Primary amount remaining: {!JSENCODE(HTMLENCODE(currencySymbol))} <span id="primaryremainingamount"><b>{!JSENCODE(HTMLENCODE(TEXT(IF(isUpdate,currentBillingObj.Primary_Annual_Amount__c-existingInstallment[1].Total_distributed_amount__c,currentBillingObj.Primary_Annual_Amount__c))))}</b></span></td>
+                         <td>Spouse/Partner amount remaining: {!JSENCODE(HTMLENCODE(currencySymbol))} <span id="spouseremainingamount"><b>{!JSENCODE(HTMLENCODE(TEXT(IF(isUpdate,currentBillingObj.Spouse_Partner_Annual_Amount__c-existingInstallment[2].Total_distributed_amount__c,currentBillingObj.Spouse_Partner_Annual_Amount__c))))}</b></span></td>
+                         <td>Dependent amount remaining: {!JSENCODE(HTMLENCODE(currencySymbol))} <span id="dependentremaingamount"><b>{!JSENCODE(HTMLENCODE(TEXT(IF(isUpdate,currentBillingObj.Dependent_Annual_Amount__c-existingInstallment[0].Total_distributed_amount__c,currentBillingObj.Dependent_Annual_Amount__c))))}</b></span></td>
+                     </tr>         
+                 </table> <br/>
+                 <script>
+                 $('#primaryanualamount').find('b').html(parseFloat($('#primaryanualamount').find('b').text()).toFixed(2));
+                 $('#spouseanualamount').find('b').html(parseFloat($('#spouseanualamount').find('b').text()).toFixed(2));
+                 $('#dependentanualamount').find('b').html(parseFloat($('#dependentanualamount').find('b').text()).toFixed(2));
+                 </script>
+                </apex:pageBlockSection>
+                <apex:outputPanel styleClass="head">
+                    <apex:pageBlockSection title="Due Distribution" columns="1">
+                        <br/>
+                        <apex:outputPanel ><table style="width:100%">
+                            <tbody>
+                                <tr>
+                                    <td style="width:60%;"></td>
+                                    <td style="width:37%;"><div align="right"><apex:commandButton value="Cancel" onclick="back(); return false;"/>&nbsp;&nbsp;<apex:commandButton status="WORKING" styleClass="saveFullBut" value="Save Due Distribution" action="{!SaveFull}" reRender="memType"/></div></td>
+                                    <td style="width:3%;"></td>
+                                </tr>
+                            </tbody>
+                        </table></apex:outputPanel>
+                        <apex:outputPanel >
+                        <table width="100%;" class="DistributionTable">
+                            <thead>
+                              <th style="width: 20%">Month</th>
+                                <th style="width: 26%">Primary Amount  &nbsp; &nbsp; {!JSENCODE(HTMLENCODE(currencySymbol))} <input style="width:70px;" id="PrimaryNumber" pattern="[0-9.]+" type="text"/><button class="address-card-action address-card-link js-edit-address-btn copyLink" type="button" onclick="copyAmounts('Primary'); return false;"><b>Copy</b></button></th>
+                                <th style="width: 26%">Spouse Amount &nbsp; &nbsp; {!JSENCODE(HTMLENCODE(currencySymbol))} <input style="width:70px;" id="SpouseNumber" pattern="[0-9.]+" type="text"/> <button class="address-card-action address-card-link js-edit-address-btn copyLink" type="button" onclick="copyAmounts('Spouse'); return false;"><b>Copy</b></button></th>
+                                <th style="width: 28%">Dependent Amount &nbsp; &nbsp; {!JSENCODE(HTMLENCODE(currencySymbol))} <input style="width:70px;" id="DependentNumber" pattern="[0-9.]+" type="text"/> <button class="address-card-action address-card-link js-edit-address-btn copyLink" type="button" onclick="copyAmounts('Dependent'); return false;"><b>Copy</b></button>
+                                <button class="address-card-action address-card-link js-edit-address-btn clearAll" onclick="clearAll(); return false;" type="button"><b>Clear All</b></button>
+                                </th>
+                            </thead>
+                            <tbody>
+                              <apex:repeat value="{!sortedListOfKeys}" var="disObj">
+                                  <tr Class="{!DistrubtionMap[disObj].monthName}">
+                                      <td>{!JSENCODE(HTMLENCODE(DistrubtionMap[disObj].monthName))}<span style="font-size: 10px;">{!JSENCODE(HTMLENCODE(DistrubtionMap[disObj].className))}</span></td>
+                                        <td Class="date{!DistrubtionMap[disObj].monthName}"><apex:outputText styleClass="currSymbol" value="{!currencySymbol}"/>&nbsp;<apex:inputField styleClass="primaryamount" value="{!DistrubtionMap[disObj].primaryAmount.January__c}" onkeyup="calculateAmount('primaryanualamount','primaryamount','primaryremainingamount',this)" onblur="fixAmount(this)"/></td>
+                                        <td Class="date{!DistrubtionMap[disObj].monthName}"><apex:outputText styleClass="currSymbol" value="{!currencySymbol}"/>&nbsp;<apex:inputField styleClass="spouseamount" value="{!DistrubtionMap[disObj].spouseAmount.January__c}" onkeyup="calculateAmount('spouseanualamount','spouseamount','spouseremainingamount',this)" onblur="fixAmount(this)"/></td>
+                                        <td Class="date{!DistrubtionMap[disObj].monthName}"><apex:outputText styleClass="currSymbol" value="{!currencySymbol}"/>&nbsp;<apex:inputField styleClass="dependentamount" value="{!DistrubtionMap[disObj].dependentAmount.January__c}" onkeyup="calculateAmount('dependentanualamount','dependentamount','dependentremaingamount',this)" onblur="fixAmount(this)"/></td>
+                                    </tr>
+                                </apex:repeat>
+                            </tbody>
+                        </table>
+                         </apex:outputPanel>
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+            </apex:outputPanel>
+        </apex:PageBlock>
+    </apex:form>
+</apex:page>

@@ -1,0 +1,6 @@
+<apex:page showHeader="true" sidebar="true" standardController="Billing_Custom_Distribution__c">
+	<br/><br/>
+	<apex:pageMessage summary="Sorry! You do not have edit/delete permissions." severity="Error" strength="2"/>
+    <apex:pageMessages />
+	<apex:detail />
+</apex:page>

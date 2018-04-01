@@ -1,0 +1,509 @@
+<apex:page id="page" tabStyle="Financial_Landing_Page__tab">
+    <apex:sectionHeader title="Financial Landing Page"/>
+    <script>
+    function openApproveStmtPage()
+    {
+        window.open('{!JSENCODE($Page.ApproveStatements)}');
+    } 
+    function Aging(name)
+    {
+        var page = '{!JSENCODE($Page.APAgingBatchRunner)}';
+        if(name==='MemberAging'){
+            page = page + '?Name=MemberAging';
+        }
+        else if(name==='APAging'){
+            page = page + '?Name=APAging';
+        }
+        window.open(page);
+    }
+
+    function createCredits(){
+        var page = '{!JSENCODE($Page.CreditBookSetup)}';
+        page = page + '?from=financialLandingPage';
+        window.open(page);
+    }
+    </script>
+    <apex:form id="flp">
+        <apex:pageblock mode="maindetail" title="">
+            <apex:pageMessages />
+            <!--General Ledger & Reporting-->
+            <apex:pageblocksection columns="4" title="General Ledger & Reporting">
+                   <apex:pageblocksectionItem >
+                    <apex:pageblock mode="maindetail">
+                        <apex:pageblocksection >
+                        <apex:pageblocksectionItem >
+                            
+                            <apex:commandlink onclick="window.open('{!$Page.ManualFinancialJournal}')" rerender="flp">
+                                <apex:image url="{!URLFOR($Resource.LandingPageIcons,'Manual-Journal.png')}" title="Manual Journal" width="90" height="90" />
+                            </apex:commandlink>
+                        </apex:pageblocksectionItem>
+                        </apex:pageblocksection>
+                        <apex:pageblocksection >
+                        <apex:pageblocksectionItem >
+                            <span style="text-align:center;">Financial Journal Entries</span>
+                        </apex:pageblocksectionItem>
+                        </apex:pageblocksection>
+                    </apex:pageblock>
+                </apex:pageblocksectionItem>
+
+                <apex:pageblocksectionItem >
+                    <apex:pageblock mode="maindetail">
+                        <apex:pageblocksection >
+                        <apex:pageblocksectionItem >
+                            
+                            <apex:commandlink onclick="window.open('{!$Page.RecurringJournalEntry}')" rerender="flp">
+                                <apex:image url="{!URLFOR($Resource.LandingPageIcons,'Recurring-Entry.png')}" title="Manual Journal" width="90" height="90" />
+                            </apex:commandlink>
+                        </apex:pageblocksectionItem>
+                        </apex:pageblocksection>
+                        <apex:pageblocksection >
+                        <apex:pageblocksectionItem >
+                            <span style="text-align:center;">Recurring Journal Entries</span>
+                        </apex:pageblocksectionItem>
+                        </apex:pageblocksection>
+                    </apex:pageblock>
+                </apex:pageblocksectionItem>
+
+                <apex:pageblocksectionItem >
+                <apex:pageblock mode="maindetail">
+                        <apex:pageblocksection >
+                        <apex:pageblocksectionItem >
+                            
+                            <apex:commandlink onclick="window.open('{!$Page.BankReconciliation}')" rerender="flp">
+                                <apex:image url="{!URLFOR($Resource.LandingPageIcons,'Database-Cloud-128.png')}" title="Bank Reconciliation" width="90" height="90" />
+                            </apex:commandlink>
+                        </apex:pageblocksectionItem>
+                        </apex:pageblocksection>
+                        <apex:pageblocksection >
+                        <apex:pageblocksectionItem >
+                            <span style="text-align:center;">Bank Reconciliation</span>
+                        </apex:pageblocksectionItem>
+                        </apex:pageblocksection>
+                    </apex:pageblock>
+                </apex:pageblocksectionItem>            
+            </apex:pageblocksection>
+
+            <!--Accounts Payable-->
+            <apex:pageblocksection columns="3" title="Accounts Payable">
+                <apex:pageblocksectionItem >
+                    <apex:pageblock mode="maindetail">
+                        <apex:pageblocksection >
+
+                        <apex:pageblocksectionItem >
+                            <apex:commandlink onclick="window.open('{!$Page.AccountsPayable}')" rerender="flp">
+                                <apex:image url="{!URLFOR($Resource.LandingPageIcons,'Account-Payable.png')}" title="Accounts Payable" width="90" height="90" />
+                            </apex:commandlink>
+                        </apex:pageblocksectionItem>
+
+                        </apex:pageblocksection>
+                        <apex:pageblocksection >
+                        <apex:pageblocksectionItem >
+                            <span style="text-align:center;">Accounts Payable</span>
+                        </apex:pageblocksectionItem>
+                        </apex:pageblocksection>
+                    </apex:pageblock>
+                </apex:pageblocksectionItem>
+                 <apex:pageblocksectionItem >
+                    <apex:pageblock mode="maindetail">
+                        <apex:pageblocksection >
+                        <apex:pageblocksectionItem >
+                            <apex:commandlink onclick="window.open('{!$Page.VendorCheckRun}')" rerender="flp">
+                                <apex:image url="{!URLFOR($Resource.LandingPageIcons,'Check-Run.png')}" title="Check Run" width="90" height="90" />
+                            </apex:commandlink>
+                        </apex:pageblocksectionItem>
+                        </apex:pageblocksection>
+                        <apex:pageblocksection >
+                        <apex:pageblocksectionItem >
+                            <span style="text-align:center;">&nbsp; &nbsp; &nbsp;Check Run</span>
+                        </apex:pageblocksectionItem>
+                        </apex:pageblocksection>
+                    </apex:pageblock>
+                </apex:pageblocksectionItem>
+                <apex:pageblocksectionItem >
+                    <apex:pageblock mode="maindetail">
+                        <apex:pageblocksection >
+                        <apex:pageblocksectionItem >
+                            <apex:commandlink onclick="window.open('{!$Page.CheckDepositHere}')" rerender="flp">
+                                <apex:image url="{!URLFOR($Resource.LandingPageIcons,'Check-Run.png')}" title="Check Deposit" width="90" height="90" />
+                            </apex:commandlink>
+                        </apex:pageblocksectionItem>
+                        </apex:pageblocksection>
+                        <apex:pageblocksection >
+                        <apex:pageblocksectionItem >
+                            <span style="text-align:center;">&nbsp; &nbsp; &nbsp;Check Deposit</span>
+                        </apex:pageblocksectionItem>
+                        </apex:pageblocksection>
+                    </apex:pageblock>
+                </apex:pageblocksectionItem>
+                <apex:pageblocksectionItem >
+                    <apex:pageblock mode="maindetail">
+                        <apex:pageblocksection >
+                        <apex:pageblocksectionItem >
+                            <apex:commandlink onclick="window.open('{!$Page.ManualCredit}')" rerender="flp">
+                                <apex:image url="{!URLFOR($Resource.LandingPageIcons,'Check-Run.png')}" title="Manual Credit" width="90" height="90" />
+                            </apex:commandlink>
+                        </apex:pageblocksectionItem>
+                        </apex:pageblocksection>
+                        <apex:pageblocksection >
+                        <apex:pageblocksectionItem >
+                            <span style="text-align:center;">&nbsp; &nbsp; &nbsp;Manual Credit</span>
+                        </apex:pageblocksectionItem>
+                        </apex:pageblocksection>
+                    </apex:pageblock>
+                </apex:pageblocksectionItem>
+                <apex:pageblocksectionItem >
+                    <apex:pageblock mode="maindetail">
+                        <apex:pageblocksection >
+                        <apex:pageblocksectionItem >
+                            <apex:commandlink onclick="window.open('{!$Page.MassPayementCapture}')" rerender="flp">
+                                <apex:image url="{!URLFOR($Resource.LandingPageIcons,'Check-Run.png')}" title="Mass payment" width="90" height="90" />
+                            </apex:commandlink>
+                        </apex:pageblocksectionItem>
+                        </apex:pageblocksection>
+                        <apex:pageblocksection >
+                        <apex:pageblocksectionItem >
+                            <span style="text-align:center;">&nbsp; &nbsp; &nbsp;Mass Payment</span>
+                        </apex:pageblocksectionItem>
+                        </apex:pageblocksection>
+                    </apex:pageblock>
+                </apex:pageblocksectionItem>
+            </apex:pageblocksection>
+
+            <!--Accounts Receivable-->
+            <apex:pageblocksection columns="4" title="Accounts Receivable">
+                <apex:pageBlockSectionItem >
+                     <apex:pageblock mode="maindetail">
+                        <apex:pageblocksection >
+
+                        <apex:pageblocksectionItem >
+                            <apex:commandlink onclick="window.open('{!$Page.GenerateDues}')" rerender="flp">
+                                <apex:image url="{!URLFOR($Resource.LandingPageIcons,'Generate-Dues.png')}" title="Generate Dues" width="90" height="90" />
+                            </apex:commandlink>
+                        </apex:pageblocksectionItem>
+
+                        </apex:pageblocksection>
+                        <apex:pageblocksection >
+                        <apex:pageblocksectionItem >
+                            <span style="text-align:center;">Generate Dues</span>
+                        </apex:pageblocksectionItem>
+                        </apex:pageblocksection>
+                    </apex:pageblock>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:pageblock mode="maindetail">
+                        <apex:pageblocksection >
+
+                        <apex:pageblocksectionItem >
+                            <apex:commandlink onclick="window.open('{!$Page.PostDues}')" rerender="flp">
+                                <apex:image url="{!URLFOR($Resource.LandingPageIcons,'Checklist-128.png')}" title="Post Dues" width="90" height="90" />
+                            </apex:commandlink>
+                        </apex:pageblocksectionItem>
+
+                        </apex:pageblocksection>
+                        <apex:pageblocksection >
+                        <apex:pageblocksectionItem >
+                            <span style="text-align:right; margin-left: 10%;">Post Dues</span>
+                        </apex:pageblocksectionItem>
+                        </apex:pageblocksection>
+                    </apex:pageblock>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:pageblock mode="maindetail">
+                        <apex:pageblocksection >
+
+                        <apex:pageblocksectionItem >
+                            <apex:commandlink onclick="window.open('{!$Page.ChangeMembershipType}')" rerender="flp"> 
+                                <apex:image url="{!URLFOR($Resource.LandingPageIcons,'MassUpdateMemType.png')}" title="Update Membership Types" width="90" height="90" />
+                            </apex:commandlink>
+                        </apex:pageblocksectionItem>
+
+                        </apex:pageblocksection>
+                        <apex:pageblocksection >
+                        <apex:pageblocksectionItem >
+                            <span style="text-align:right;">Membership Type Change</span>
+                        </apex:pageblocksectionItem>
+                        </apex:pageblocksection>
+                    </apex:pageblock>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:pageblock mode="maindetail">
+                        <apex:pageblocksection >
+
+                        <apex:pageblocksectionItem >
+                            <apex:commandlink onclick="createCredits(); return false" rerender="flp"> 
+                                <apex:image url="{!URLFOR($Resource.LandingPageIcons,'CreditBook.png')}" title="Credit Book" width="90" height="90"/>
+                            </apex:commandlink>
+                        </apex:pageblocksectionItem>
+
+                        </apex:pageblocksection>
+                        <apex:pageblocksection >
+                        <apex:pageblocksectionItem >
+                            <span style="text-align:center;">Credit Book</span>
+                        </apex:pageblocksectionItem>
+                        </apex:pageblocksection>
+                    </apex:pageblock>
+                </apex:pageBlockSectionItem>
+            </apex:pageblocksection>
+
+            <!--Statement Generation-->
+            <apex:pageblocksection columns="4" title="Statement Generation">
+                <apex:pageBlockSectionItem >
+                     <apex:pageblock mode="maindetail">
+                        <apex:pageblocksection >
+
+                        <apex:pageblocksectionItem >
+                            <apex:commandlink onclick="window.open('{!$Page.GenerateStatements}')" rerender="flp">
+                                <apex:image url="{!URLFOR($Resource.LandingPageIcons,'Generate-Statement.png')}" title="Generate Statement" width="90" height="90" />
+                            </apex:commandlink>
+                        </apex:pageblocksectionItem>
+
+                        </apex:pageblocksection>
+                        <apex:pageblocksection >
+                        <apex:pageblocksectionItem >
+                            <span style="text-align:center;">Generate Statements</span>
+                        </apex:pageblocksectionItem>
+                        </apex:pageblocksection>
+                    </apex:pageblock>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                     <apex:pageblock mode="maindetail">
+                        <apex:pageblocksection >
+
+                        <apex:pageblocksectionItem >
+                            <apex:commandlink onclick="openApproveStmtPage(); return false" rerender="flp">
+                                <apex:image url="{!URLFOR($Resource.LandingPageIcons,'Approve-Statements.png')}" title="Approve Statement" width="90" height="90" />
+                            </apex:commandlink>
+                        </apex:pageblocksectionItem>
+
+                        </apex:pageblocksection>
+                        <apex:pageblocksection >
+                        <apex:pageblocksectionItem >
+                            <span style="text-align:center;">Approve Statements</span>
+                        </apex:pageblocksectionItem>
+                        </apex:pageblocksection>
+                    </apex:pageblock>
+                </apex:pageBlockSectionItem>
+                 <apex:pageBlockSectionItem >
+                     <apex:pageblock mode="maindetail">
+                        <apex:pageblocksection >
+
+                        <apex:pageblocksectionItem >
+                            <apex:commandlink >
+                                <apex:image style="visibility: hidden;" width="90" height="90"/>
+                            </apex:commandlink>
+                        </apex:pageblocksectionItem>
+
+                        </apex:pageblocksection>
+                        <apex:pageblocksection >
+                            <apex:pageblocksectionItem >
+                                <span></span>
+                            </apex:pageblocksectionItem>
+                        </apex:pageblocksection>
+                    </apex:pageblock>
+                </apex:pageBlockSectionItem>
+                 <apex:pageBlockSectionItem >
+                     <apex:pageblock mode="maindetail">
+                        <apex:pageblocksection >
+
+                        <apex:pageblocksectionItem >
+                            <apex:commandlink >
+                                <apex:image style="visibility: hidden;" width="90" height="90"/>
+                            </apex:commandlink>
+                        </apex:pageblocksectionItem>
+
+                        </apex:pageblocksection>
+                        <apex:pageblocksection >
+                            <apex:pageblocksectionItem >
+                                <span></span>
+                            </apex:pageblocksectionItem>
+                        </apex:pageblocksection>
+                    </apex:pageblock>
+                </apex:pageBlockSectionItem>
+            </apex:pageblocksection>
+
+            <!--Configuration/Financial Mapping-->
+            <apex:pageblocksection columns="4" title="Configuration/Financial Mapping">
+                <apex:pageblocksectionItem >
+                    <apex:pageblock mode="maindetail">
+                        <apex:pageblocksection >
+                        <apex:pageblocksectionItem >
+                            <apex:commandlink onclick="window.open('{!URLFOR($Action.Financial_Account__c.List,$ObjectType.Financial_Account__c)}')" rerender="flp">
+                                <apex:image url="{!URLFOR($Resource.LandingPageIcons,'Financial-Account.png')}" title="Financial Accounts" width="90" height="90" />
+                            </apex:commandlink>
+                        </apex:pageblocksectionItem>
+                        </apex:pageblocksection>
+                        <apex:pageblocksection >
+                            <apex:pageblocksectionItem >
+                                <span style="text-align:center;">Financial Accounts</span>
+                            </apex:pageblocksectionItem>
+                        </apex:pageblocksection>
+                    </apex:pageblock>
+                </apex:pageblocksectionItem>
+                <apex:pageblocksectionItem >
+                    <apex:pageblock mode="maindetail">
+                        <apex:pageblocksection >
+                            <apex:pageblocksectionItem >
+                                <apex:commandlink onclick="window.open('/apex/TxnAllTaxes')" rerender="flp">
+                                    <apex:image url="{!URLFOR($Resource.LandingPageIcons,'Batman-128.png')}" title="Tax and Service Charge Mapping" width="90" height="90" />
+                                </apex:commandlink>
+                            </apex:pageblocksectionItem>
+                        </apex:pageblocksection>
+                        <apex:pageblocksection >
+                            <apex:pageblocksectionItem >
+                                <span style="text-align:center;">Tax and Service Charge Mapping</span>
+                            </apex:pageblocksectionItem>
+                        </apex:pageblocksection>
+                    </apex:pageblock>
+                </apex:pageblocksectionItem>
+
+                 <apex:pageblocksectionItem >
+                    <apex:pageblock mode="maindetail">
+                        <apex:pageblocksection >
+                        <apex:pageblocksectionItem >
+                            <apex:commandlink onclick="window.open('{!$Page.TaxToAccountMapping}')" rerender="flp">
+                                <apex:image url="{!URLFOR($Resource.LandingPageIcons,'Settings-5-128.png')}" title="Tax to Financial Mapping" width="90" height="90" />
+                            </apex:commandlink>
+                        </apex:pageblocksectionItem>
+                        </apex:pageblocksection>
+                        <apex:pageblocksection >
+                        <apex:pageblocksectionItem >
+                            <span>Tax to Financial Mapping</span>
+                        </apex:pageblocksectionItem>
+                        </apex:pageblocksection>
+                    </apex:pageblock>
+                </apex:pageblocksectionItem>
+                <apex:pageblocksectionItem >
+                    <apex:pageblock mode="maindetail">
+                        <apex:pageblocksection >
+                        <apex:pageblocksectionItem >
+                            <apex:commandlink onclick="window.open('{!$Page.CheckAsPDFTest}')" rerender="flp">
+                                <apex:image url="{!URLFOR($Resource.LandingPageIcons,'Settings-5-128.png')}" title="Check Spacing" width="90" height="90" />
+                            </apex:commandlink>
+                        </apex:pageblocksectionItem>
+                        </apex:pageblocksection>
+                        <apex:pageblocksection >
+                        <apex:pageblocksectionItem >
+                            <span>Check Spacing</span>
+                        </apex:pageblocksectionItem>
+                        </apex:pageblocksection>
+                    </apex:pageblock>
+                </apex:pageblocksectionItem>
+                
+
+                <apex:pageBlockSectionItem ><apex:pageBlock mode="maindetail"></apex:pageBlock></apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem ><apex:pageBlock mode="maindetail"></apex:pageBlock></apex:pageBlockSectionItem>
+            </apex:pageblocksection>
+
+            <!--Financial Reports & Budgets-->
+            <apex:pageblocksection columns="4" title="Financial Reports & Budgets">
+                <apex:pageblocksectionItem >
+                    <apex:pageblock mode="maindetail">
+                        <apex:pageblocksection >
+                        <apex:pageblocksectionItem >
+                            <apex:commandlink onclick="window.open('{!$Page.GeneralLedgerReport}')" rerender="flp">
+                                <apex:image url="{!URLFOR($Resource.LandingPageIcons,'Settings-5-128.png')}" title="General ledger report" width="90" height="90" />
+                            </apex:commandlink>
+                        </apex:pageblocksectionItem>
+                        </apex:pageblocksection>
+                        <apex:pageblocksection >
+                        <apex:pageblocksectionItem >
+                            <span>General ledger report</span>
+                        </apex:pageblocksectionItem>
+                        </apex:pageblocksection>
+                    </apex:pageblock>
+                </apex:pageblocksectionItem>
+                <apex:pageBlockSectionItem />
+                <apex:pageBlockSectionItem />
+                <apex:pageBlockSectionItem />
+            </apex:pageblocksection>
+           
+            <!--Batches-->
+            <apex:pageblocksection columns="4" title="Batches">
+                <!-- <apex:pageBlockSectionItem />
+                <apex:pageBlockSectionItem />
+                <apex:pageBlockSectionItem />
+                <apex:pageBlockSectionItem /> -->
+                 <apex:pageblocksectionItem >
+                    <apex:pageblock mode="maindetail">
+                        <apex:pageblocksection >
+                        <apex:pageblocksectionItem >
+                            <apex:commandlink onclick="Aging('APAging'); return false" rerender="flp">
+                                <apex:image url="{!URLFOR($Resource.LandingPageIcons,'Ap-aging.png')}" title="AP Aging" width="90" height="90" />
+                            </apex:commandlink>
+                        </apex:pageblocksectionItem>
+                        </apex:pageblocksection>
+                        <apex:pageblocksection >
+                        <apex:pageblocksectionItem >
+                            <span style="text-align:center;">Account Payable Aging</span>
+                        </apex:pageblocksectionItem>
+                        </apex:pageblocksection>
+                    </apex:pageblock>
+                </apex:pageblocksectionItem> 
+                <apex:pageblocksectionItem >
+                    <apex:pageblock mode="maindetail">
+                        <apex:pageblocksection >
+                        <apex:pageblocksectionItem >
+                            <apex:commandlink onclick="Aging('MemberAging'); return false" rerender="flp">
+                                <apex:image url="{!URLFOR($Resource.LandingPageIcons,'Member-Aging.png')}" title="AP Aging" width="90" height="90" />
+                            </apex:commandlink>
+                        </apex:pageblocksectionItem>
+                        </apex:pageblocksection>
+                        <apex:pageblocksection >
+                        <apex:pageblocksectionItem >
+                            <span style="text-align:center;">Account Receivable Aging</span>
+                        </apex:pageblocksectionItem>
+                        </apex:pageblocksection>
+                    </apex:pageblock>
+                </apex:pageblocksectionItem>  
+                <apex:pageBlockSectionItem >
+                     <apex:pageblock mode="maindetail">
+                        <apex:pageblocksection >
+
+                        <apex:pageblocksectionItem >
+                            <apex:commandlink >
+                                <apex:image style="visibility: hidden;" width="90" height="90"/>
+                            </apex:commandlink>
+                        </apex:pageblocksectionItem>
+
+                        </apex:pageblocksection>
+                        <apex:pageblocksection >
+                            <apex:pageblocksectionItem >
+                                <span></span>
+                            </apex:pageblocksectionItem>
+                        </apex:pageblocksection>
+                    </apex:pageblock>
+                </apex:pageBlockSectionItem>
+                 <apex:pageBlockSectionItem >
+                     <apex:pageblock mode="maindetail">
+                        <apex:pageblocksection >
+
+                        <apex:pageblocksectionItem >
+                            <apex:commandlink >
+                                <apex:image style="visibility: hidden;" width="90" height="90"/>
+                            </apex:commandlink>
+                        </apex:pageblocksectionItem>
+
+                        </apex:pageblocksection>
+                        <apex:pageblocksection >
+                            <apex:pageblocksectionItem >
+                                <span></span>
+                            </apex:pageblocksectionItem>
+                        </apex:pageblocksection>
+                    </apex:pageblock>
+                </apex:pageBlockSectionItem>              
+            </apex:pageblocksection>
+
+            <!--Other-->
+            <apex:pageblocksection columns="4" title="Other">
+                <apex:pageBlockSectionItem />
+                <apex:pageBlockSectionItem />
+                <apex:pageBlockSectionItem />
+                <apex:pageBlockSectionItem />               
+                <apex:pageBlockSectionItem ><apex:pageBlock mode="maindetail"></apex:pageBlock></apex:pageBlockSectionItem>
+
+                <apex:pageBlockSectionItem ><apex:pageBlock mode="maindetail"></apex:pageBlock></apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem ><apex:pageBlock mode="maindetail"></apex:pageBlock></apex:pageBlockSectionItem>
+            </apex:pageblocksection>
+        </apex:pageblock>
+    </apex:form>
+</apex:page>

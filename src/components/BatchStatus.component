@@ -1,0 +1,51 @@
+<!--Component to show the status of the running batch-->
+<apex:component controller="BatchStatusController">
+	<apex:includescript value="{!URLFOR($Resource.jqueryDatatable_3embed,'/3embed/jquery-1.11.1.min.js')}" />
+	<apex:includeScript value="{!URLFOR($Resource.foretees, '/ProgressBar/progressbar.js')}"/>
+	<apex:stylesheet value="{!URLFOR($Resource.foretees, '/ProgressBar/progressbar.css')}"/>
+	<apex:stylesheet value="{!URLFOR($Resource.foretees, '/main.css')}"/>
+	
+	<apex:attribute name="bachId" type="Id" description="id of the batch" assignTo="{!batchId}"/>
+	<apex:attribute name="url" type="string" description="url to which after batch completion the page will redirect to" assignTo="{!redirectToPage}"/>
+		<apex:form >
+			<apex:actionPoller rerender="f1, stat" interval="5" action="{!updateProgress}" status="counterstatus"/>
+			<apex:outputPanel >
+				<apex:outputPanel styleClass="popupBackground">
+				<apex:outputPanel styleClass="custPopup">
+				<apex:pageBlock >
+					<apex:pageBlockSection columns="1">
+					Current Batch Status :
+					<br/><br/>
+					<div id="progressBar" class="jquery-ui-like"><div style="width:0px;"></div></div> 
+					<apex:outputPanel id="stat"><div id="status">{!currentJob.aj.Status}</div> </apex:outputPanel>
+       		 	</apex:pageBlockSection>
+    		</apex:pageBlock>
+			</apex:outputPanel>
+			</apex:outputPanel>
+		</apex:outputPanel>
+		<apex:outputPanel id="f1">
+			<script>
+
+			if(parseFloat('{!errornum}')>0){
+			$("#status").text('Failed');
+                     var delayMillis = 800; //1 second
+
+                     setTimeout(function() {
+                     	alert('Batch processing caught an error. Please check your email for further details.');
+                     	window.location='{!JSENCODE(HTMLENCODE(redirectToPage))}';
+                     }, delayMillis);
+                 }
+                 else{
+                 	progressBar(parseFloat('{!currentJob.Percent}'), $('#progressBar'));
+                 	if('{!currentJob.isCompleted}'=='true'){
+                        var delayMillis = 1500; //1 second
+                        setTimeout(function() {
+                        	alert('Batch ran with {!errornum} errors. Please check your email for additional information.')
+                        	window.location='{!JSENCODE(HTMLENCODE(redirectToPage))}';
+                        }, delayMillis);
+                    }
+                }
+            </script>   
+		</apex:outputPanel>
+	</apex:form>
+</apex:component>

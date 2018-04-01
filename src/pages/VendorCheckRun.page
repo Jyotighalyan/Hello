@@ -1,0 +1,464 @@
+<apex:page showHeader="true" sidebar="false" standardController="Vendor_Invoice_Check_Batch__c" extensions="VendorCheckRunController">
+    <!-- Scripts -->
+    <apex:includeScript value="{!URLFOR($Resource.jQuery_UI,'jquery-ui-1.10.3.custom/js/jquery-3.2.1.min.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.jQuery_UI,'jquery-ui-1.10.3.custom/js/jquery-ui-1.10.3.custom.min.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.jQuery_UI,'jquery-ui-1.10.3.custom/js/jquery.dataTables.1.10.15.js')}"/>
+    
+    <!--Styles-->
+    <apex:stylesheet value="{!URLFOR($Resource.jQuery_UI, 'jquery-ui-1.10.3.custom/css/ui-lightness/jquery-ui-1.10.3.custom.min.css')}"/>
+        <apex:stylesheet value="{!URLFOR($Resource.jQuery_UI, 'jquery-ui-1.10.3.custom/css/ui-lightness/jquery.dataTables.1.10.15.css')}"/>
+    
+    <!--<apex:stylesheet value="//cdn.datatables.net/1.10.15/css/jquery.dataTables.css"/>-->
+    <style>
+        tr.dataRow {
+        background-color:white;
+        }
+        tr.dataRow:hover {
+        background-color: #e3f3ff;
+        };
+    </style>
+    
+    <script>
+    var j$ = jQuery.noConflict();
+    var vcrIDTPage = 0;
+    
+    function rrcRenderAllRows(){
+        var existTable = j$('table#existCheckTable').dataTable();
+        j$('table#existCheckTable tbody tr').each(function(index){
+            j$(this).addClass('visibleRow');
+        });
+        j$(existTable.fnGetNodes()).each(function(index){
+            var row = j$(this);
+            if(!row.hasClass('visibleRow')){
+                row.addClass('hiddenRow');
+            }
+        });
+        existTable.fnSettings()._iDisplayLength = -1;
+        existTable.fnDraw();
+    }
+    </script>
+    
+    <apex:form id="theForm">
+        <div id="spinner" style="display:none">
+            <div class="waitingSearchDiv" style="background-color: #000;
+                                                 height: 100%;filter: alpha(opacity=50);opacity:0.5;width:100%;">
+            </div>
+            <div class="waitingSearchDiv" style="z-index:999;width:100%">
+                <div class="waitingHolder" style="z-index:999;top: 175px; left: 20px; width: 200px;height: 25px;background-color: #fff;border: 1px solid black;border-radius: 5px;padding-top: 10px;color: #000;">
+                    <span class="waitingDescription" style="color:#000;">Working...</span>
+                    <img class="waitingImage" src="/img/loading.gif" title="Please Wait..." />
+                </div>
+            </div>
+        </div>
+        
+        <apex:actionStatus id="WORKING" >
+            <apex:facet name="start">
+                <div class="waitingSearchDiv" style="background-color: #000;
+                                                     height: 100%;filter: alpha(opacity=50);opacity:0.5;width:100%;">
+                </div>
+                <div class="waitingSearchDiv" style="z-index:999;width:100%">
+                    <div class="waitingHolder" style="z-index:999;top: 175px; left: 20px; width: 200px;height: 25px;background-color: #fff;border: 1px solid black;border-radius: 5px;padding-top: 10px;color: #000;">
+                        <span class="waitingDescription" style="color:#000;">Working...</span>
+                        <img class="waitingImage" src="/img/loading.gif" title="Please Wait..." />
+                    </div>
+                </div>
+            </apex:facet>
+        </apex:actionStatus>
+        
+        <apex:actionFunction name="selectAllVendorAF" action="{!selectAllVendor}" reRender="INVOICESECTION" status="WORKING">
+            <apex:param name="p1" value="" assignTo="{!selectedVendor}"></apex:param>
+            <apex:param name="p2" assignTo="{!selectAllOnHold}" value=""/>
+        </apex:actionFunction>
+        <apex:outputPanel id="MESSAGES">
+            <apex:pageMessage severity="INFO" strength="1" summary="Closed Months" detail="{!'The Following Months are currently Closed: '+closedMonthWarning}" rendered="{!closedMonthWarning!=null && closedMonthWarning!=''}"></apex:pageMessage>
+            <apex:pageMessages ></apex:pageMessages>
+        </apex:outputPanel>
+        <apex:pageBlock title="Vendor Invoice Checks">
+            <apex:pageBlockSection rendered="{!validCheckBatchDate==false}" id="validateBlock">
+                <apex:inputField value="{!cEndDate.Cert_of_Liability_Expiration_Date__c}" label="Invoice Due Date"></apex:inputField>
+                <!--<apex:inputField label="Location" value="{!locationSelection.Location__c}">
+<apex:actionSupport event="onchange" action="{!setOperatingChecksForLocation}" reRender="validateBlock"/>
+</apex:inputField>-->
+                <apex:inputField label="Cash Account" value="{!locationSelection.Payment_Financial_Account__c}" required="true" rendered="true">
+                    <apex:actionSupport event="onchange" action="{!getOperatingChecksFA}" reRender="validateBlock"/>
+                </apex:inputField>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Cash Account" rendered="{!operatingChecks!=null && operatingChecks.Id!=null}"/>
+                    <apex:outputLink value="/{!operatingChecks.Id}" rendered="{!operatingChecks!=null && operatingChecks.Id!=null}">{!operatingChecks.Account_Number__c} - {!operatingChecks.Name}</apex:outputLink>
+                </apex:pageBlockSectionItem>
+                <apex:commandButton status="WORKING" action="{!checkBatchDate}" value="Verify Date/Location/Cash Account" reRender="theForm"></apex:commandButton>
+            </apex:pageBlockSection>
+            <apex:pageBlockSection title="Check Selection for {!cEndDate.Cert_of_Liability_Expiration_Date__c}" rendered="{!validCheckBatchDate==true}">
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Batch Description"></apex:outputLabel>
+                    <apex:inputField id="VICBDescription" value="{!vicb.Description__c}" onkeypress="return noenter(event)">
+                        <apex:actionSupport event="onkeyup"  reRender="ScriptVars"/>
+                    </apex:inputField>
+                </apex:pageBlockSectionItem>
+                
+                <apex:inputField value="{!cPurchaseCategory.Purchase_Category__c}" >
+                    <apex:actionSupport status="WORKING" event="onchange"  reRender="theForm"/>
+                </apex:inputField>               
+                <apex:inputField id="batchDate" value="{!vicb.Batch_Date__c}" label="Batch Date">
+                    <apex:actionSupport event="onchange"  reRender="ScriptVars"/>
+                    <!--<apex:actionSupport status="WORKING" event="onchange" action="{!filterInvoices}" reRender="theForm"/>-->
+                </apex:inputField>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Cash Account"/>
+                    <apex:outputLink value="/{!operatingChecks.Id}">{!operatingChecks.Account_Number__c} - {!operatingChecks.Name}</apex:outputLink>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem />
+                <apex:commandButton style="float:right;" value="Cancel Batch Run" immediate="true" reRender="theForm" action="{!cancelBatch}"></apex:commandButton>
+            </apex:pageBlockSection>
+            <apex:pageBlockSection id="INVOICESECTION" columns="1" rendered="{!validCheckBatchDate==true}">
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Next Check Number"/>
+                    <apex:inputField id="NextCheckNumberId" value="{!checkRun.Next_Check_Number__c}">
+                        <apex:actionSupport event="onkeyup"  reRender="ScriptVars"/>
+                    </apex:inputField>
+                </apex:pageBlockSectionItem>
+                <!--<apex:pageBlockSectionItem >
+<apex:outputLabel value="Paid Manually"/>
+<apex:inputCheckbox value="{!paidManually}">
+<apex:actionSupport event="onchange" reRender="ScriptVars"/>
+</apex:inputCheckbox>
+</apex:pageBlockSectionItem>-->
+                <!-- <apex:pageBlockTable id="INVOICETABLE" styleClass="INVOICETABLE" value="{!PostedInvoices}" var="pi" rendered="{!PostedInvoices.size>0}">
+<apex:column >
+<apex:inputCheckbox value="{!pi.selected}" onchange="var vcrIDT = j$('table.INVOICETABLE').dataTable();vcrIDTPage =vcrIDT.api().page();rrcRenderAllRows();selectAllVendorAF('{!JSENCODE(pi.vendor)}',false)" rendered="{!pi.vi==null}">
+</apex:inputCheckbox>
+<apex:inputCheckbox value="{!pi.selected}" rendered="{!pi.vi!=null}">
+<apex:actionSupport event="onchange" onsubmit="var vcrIDT = j$('table.INVOICETABLE').dataTable();vcrIDTPage =vcrIDT.api().page();rrcRenderAllRows();" reRender="INVOICESECTION" action="{!selectInvoice}" status="WORKING" rendered="{!pi.vi!=null}">
+<apex:param name="p1" assignTo="{!selectedVendor}" value="{!pi.vi.Vendor__c}"/>
+<apex:param name="p2" assignTo="{!selectedInvoice}" value="{!pi.vi.Id}"/>
+</apex:actionSupport>
+</apex:inputCheckbox>
+<apex:facet name="header"><apex:outputPanel >
+<apex:inputCheckbox value="{!selectAll}">
+<apex:actionSupport onsubmit="var vcrIDT = j$('table.INVOICETABLE').dataTable();vcrIDTPage =vcrIDT.api().page();rrcRenderAllRows();" event="onchange"  reRender="INVOICESECTION" action="{!selectAll}" status="WORKING">
+<apex:param name="p1" value="false" assignTo="{!selectAllOnHold}"/>
+</apex:actionSupport>
+</apex:inputCheckbox> Create Check? </apex:outputPanel>
+</apex:facet>
+<apex:facet name="footer">Number of Checks: {!numOfSelChecks}</apex:facet>
+</apex:column>
+<apex:column headerValue="Vendor">
+<apex:outputField value="{!pi.vi.Vendor__c}" rendered="{!pi.vi!=null}"></apex:outputField>
+<apex:outputText value="{!pi.name}" rendered="{!pi.vi==null}"></apex:outputText>
+</apex:column>
+<apex:column headerValue="Invoice">
+<apex:outputLink value="/{!pi.vi.id}" rendered="{!pi.vi!=null}">{!pi.vi.Name}</apex:outputLink>
+<apex:inputText style="display: none" styleClass="totalAmountStyle" id="totalAmountID" rendered="{!pi.vi==null}" value="{!pi.totalAmount}"></apex:inputText>
+</apex:column>
+<apex:column headerValue="Invoice #"><apex:outputField value="{!pi.vi.Invoice_Number__c}" rendered="{!pi.vi!=null}"></apex:outputField></apex:column>
+<apex:column headerValue="Memo"><apex:inputText value="{!pi.memo}" rendered="{!pi.vi==null}"></apex:inputText></apex:column>
+<apex:column headerValue="Due Date"><apex:outputField value="{!pi.vi.Due_Date__c}" rendered="{!pi.vi!=null}"></apex:outputField></apex:column>
+<apex:column headerValue="Amount">
+<apex:outputText styleClass="{!IF(pi.vi == null, 'totalAmount','')}" id="TotalEmail" value="${!pi.amount}"></apex:outputText>
+<apex:facet name="footer">Total: ${!grandTotal}</apex:facet>
+</apex:column>
+<apex:column headerValue="Amount to Pay">
+<apex:inputText value="{!pi.amountToPay}" rendered="{!pi.vi!=null && pi.selected==true}">
+<apex:actionSupport event="onchange" onsubmit="var vcrIDT = j$('table.INVOICETABLE').dataTable();vcrIDTPage =vcrIDT.api().page();rrcRenderAllRows();" action="{!recalcTotal}" reRender="INVOICESECTION" status="WORKING"/>
+</apex:inputText>
+</apex:column>
+<apex:column headerValue="Check Run Total"><apex:outputText value="${!pi.checkRunAmount}" rendered="{!pi.checkRunAmount>0}"></apex:outputText><apex:facet name="footer">Run Total: ${!payingAmount}</apex:facet></apex:column>
+<apex:column headerValue="Notes">
+<apex:outputField value="{!pi.vi.Notes__c}" rendered="{!pi.vi!=null}"/>
+</apex:column>
+<apex:column headerValue="Include Notes on Check">
+<apex:outputField value="{!pi.vi.Include_Notes_on_Check__c}" rendered="{!pi.vi!=null}"/>
+</apex:column>
+</apex:pageBlockTable><br></br>-->
+                <table id="existCheckTable" class="existCheckTable INVOICETABLE list" border="0" cellpadding="0" cellspacing="0">
+                    <thead >
+                        <tr class="headerRow">
+                            <th class="headerRow">Create Check</th>
+                            <th class="headerRow">Vendor</th>
+                            <th class="headerRow">Invoice</th>
+                            <th class="headerRow">Invoice #</th>
+                            <th class="headerRow">Memo</th>
+                            <th class="headerRow">Due Date</th>
+                            <th class="headerRow">Amount</th>
+                            <th class="headerRow">Amount to Pay</th>
+                            <th class="headerRow">Check Run Total</th>
+                            <th class="headerRow">Notes</th>
+                            <th class="headerRow">Include Notes on Check</th>
+                            <th class="headerRow" style="display:none;">tot</th>
+                            <th class="headerRow" style="display:none;">vid</th>
+                        </tr>
+                    </thead>
+                    <tfoot>
+                        <tr class="totalRow">
+                            <th id="numOfChecks" scope="col" colspan="1" class="totalRow">Number of Checks: </th>
+                            <th scope="col" colspan="1" class="totalRow"></th>
+                            <th scope="col" colspan="1" class="totalRow"></th>
+                            <th scope="col" colspan="1" class="totalRow"></th>
+                            <th scope="col" colspan="1" class="totalRow"></th>
+                            <th scope="col" colspan="1" class="totalRow"></th>
+                            <th scope="col" colspan="1" class="totalRow" style="text-align:right;" Id="AmountTotal">Total: $0.00</th>
+                            <th scope="col" colspan="1" class="totalRow" style="text-align:right;" Id="AmountToPayTotal">Run Total: $0.00</th>
+                            <th scope="col" colspan="1" class="totalRow"></th>
+                            <th scope="col" colspan="1" class="totalRow"></th>
+                            <th scope="col" colspan="1" class="totalRow"></th>
+                        </tr>
+                    </tfoot>
+                </table>
+                <apex:outputPanel id="ScriptVars">
+                    <script>
+                    var eDate = '{!JSENCODE(HTMLENCODE(TEXT(cEndDate.Cert_of_Liability_Expiration_Date__c)))}';
+                    var eDateUTC = new Date(eDate);
+                    eDateUTC = eDateUTC.toUTCString();
+                    var batchDate = '{!JSENCODE(HTMLENCODE(TEXT(vicb.Batch_Date__c)))}';
+                    var batchDateUTC = new Date(batchDate);
+                    batchDateUTC = batchDateUTC.toUTCString();
+                    var checkLocation = '';
+                    var purchaseCategory = '{!JSENCODE(HTMLENCODE (cPurchaseCategory.Purchase_Category__c))}';
+                    var nextCheckNum = '{!JSENCODE(HTMLENCODE(checkRun.Next_Check_Number__c))}';
+                    var paidManually = '{!paidManually}';
+                    var operatingChecks = '{!operatingChecks}';
+                    var batchDescription = '{!JSENCODE(HTMLENCODE(vicb.Description__c))}';
+                    
+                    console.log('reloaded');
+                    console.log(batchDateUTC);
+                    console.log(batchDescription);
+                    console.log(paidManually);
+                    console.log(nextCheckNum);
+                    </script>
+                </apex:outputPanel>
+                <apex:actionFunction name="showMessageAF" action="{!showMessage}" rerender="MESSAGES">
+                    <apex:param name="errorLevel" assignTo="{!errorLevel}" value="" />
+                    <apex:param name="messageName" assignTo="{!messageName}" value="" />
+                </apex:actionFunction>
+                <apex:actionFunction name="reloadScriptsAF" reRender="ScriptVars" status="WORKING"/>
+                
+                <apex:outputPanel id="EXISTINGGRIDSCRIPTS">
+                    <script>
+                    function getMonthFromString(mon){
+   						return new Date(Date.parse(mon +" 1, 2012")).getMonth()+1
+					}
+                    var myFunction = function(r){                                                 
+                        r.forEach(function(e){
+                            jQuery('#existCheckTable').append(jQuery("<tr class='dataRow' id='"+(e.vi===undefined ? e.name : e.vi.Id)+"'>"
+                                                                     +"<td class='checkSelect dataCell'><input type='checkbox' onchange='checkselected(this,"+(e.vi===undefined ? true : false)+");'></td>"
+                                                                     +"<td class='dataCell'>"+(e.vi===undefined ? e.name : "<a href='/"+e.vi.Vendor__c+"'>"+e.vi.Vendor__r.Name+"</a>")+"</td>"
+                                                                     +"<td class='dataCell'>"+(e.vi===undefined ? "" : "<a href='/"+e.vi.Id+"'>"+e.vi.Name+"</a>")+"</td>"
+                                                                     +"<td class='dataCell'>"+(e.vi===undefined ? "" : (e.vi.Invoice_Number__c===undefined ? "" :e.vi.Invoice_Number__c))+"</td>"
+                                                                     +"<td class='dataCell'></td>"
+                                                                     +"<td class='dataCell'>"+(e.vi===undefined ? "" : e.Due_date) +"</td>"
+                                                                     +"<td style='text-align:right' class='checkAmount dataCell'>$"+e.amount.toFixed(2)+"</td>"
+                                                                     +"<td class='dataCell amtPayTD' style='text-align:right;'><input type='text' style='visibility:hidden;text-align:right;' onchange='recalcAmount();' class='amtPay'></td>"
+                                                                     +"<td class='dataCell'></td>"
+                                                                     +"<td class='dataCell'>"+(e.vi===undefined ? "" : (e.vi.Notes__c===undefined ? "" : e.vi.Notes__c))+"</td>"
+                                                                     +"<td class='dataCell'>"+(e.vi===undefined ? "" : "<input type='checkbox' disabled='true' "+(e.vi.Include_Notes_on_Check__c==true ? "checked" : "")+"/>")+"</td>"
+                                                                     +"<td style='display:none;' class='tot dataCell'>"+(e.vi===undefined ? true : false)+"</td>"
+                                                                     +"<td style='display:none;' class='vid dataCell'>"+(e.vi===undefined ? e.vendor : e.vi.Vendor__c)+"</td>"
+                                                                     +"</tr>"));
+                        });
+                        j$('table.existCheckTable').dataTable({
+                            sPaginationType: 'full_numbers',
+                            'aLengthMenu':[[5,10,25,-1],[5,10,25,'All']],
+                            'iDisplayLength':-1
+                        });
+                        
+                        recalcAmountTotal();
+                    };
+                    
+                    console.log(eDateUTC);
+                    console.log(checkLocation);
+                    console.log(purchaseCategory);
+                    
+                    VendorCheckRunController.loadPostedInvoicesRA(
+                        eDateUTC,purchaseCategory,
+                        myFunction
+                    );
+                    
+                    function checkselected(checkSelected, totalColumn){
+                        var check = checkSelected.parentNode.parentNode;
+                        var amtPay = check.getElementsByClassName('amtPay')[0];
+                        if(!totalColumn){
+                            if(checkSelected.checked){
+                                amtPay.value = check.getElementsByClassName('checkAmount')[0].innerHTML;
+                                amtPay.style.visibility = '';
+                            }else{
+                                amtPay.value = null;
+                                amtPay.style.visibility = 'hidden';
+                            }
+                        }else{
+                            //Total Row
+                            var vendId = check.getElementsByClassName('vid')[0].innerHTML;
+                            if(vendId!=null && vendId!=''){
+                                j$('td.vid:contains("'+vendId+'"):not(:last)').each(function(i,e){
+                                    var checkLine = e.parentNode;
+                                    var checkSelect = j$(checkLine).find('.checkSelect input');
+                                    j$(checkSelect[0]).prop('checked',checkSelected.checked)
+                                    checkselected(checkSelect[0],false);
+                                });
+                            }
+                        }
+                        recalcAmount();
+                    }
+                    function recalcAmount(){
+                        var totalAmount = 0;
+                        var myArray = {};
+                        j$("#existCheckTable tr[id]:not(:contains('Total'))").each(function(i,e){
+                            var rowTds = j$(e).find('td');
+                            var curAmount = j$(rowTds[7]).find('input')[0].value;
+                            var maxAmount = j$(rowTds[6]).html().replace('$','').replace(',','');
+                            maxAmount = Number.parseFloat(maxAmount);
+                            var vendId = j$(rowTds[12]).html();
+                            if(curAmount!=null && curAmount!= ''){
+                                curAmount = curAmount.replace('$','').replace(',','');
+                                if((maxAmount>0 && curAmount>maxAmount)||(maxAmount<0 && curAmount<maxAmount)){
+                                    curAmount = maxAmount;
+                                    j$(j$(rowTds[7]).find('input')[0]).val(maxAmount);
+                                }
+                                totalAmount += Number.parseFloat(curAmount);
+                                if(vendId in myArray){
+                                    myArray[vendId] = Number.parseFloat(curAmount) + myArray[vendId];
+                                }else{
+                                    myArray[vendId] = Number.parseFloat(curAmount);
+                                }
+                            }
+                            
+                        });
+                        j$("#AmountToPayTotal").html("$"+totalAmount.toFixed(2));
+                        j$("tr[id]:contains('Total')").each(function(i,e){
+                            //Calculate Total per vendor
+                            var vendId = j$(e).find('.vid').html();
+                            var amtPayTD = j$(e).find('td.amtPayTD')[0];
+                            if(vendId in myArray){
+                                j$(amtPayTD).html("$"+myArray[vendId].toFixed(2));
+                            }else{
+                                j$(amtPayTD).html("");
+                            }
+                        });
+                        var numOfChecks = 0;
+                        for (var i in myArray) {
+                            numOfChecks++;
+                        };
+                        var numOfChecksTD = j$('th#numOfChecks')[0];
+                        if(numOfChecksTD===undefined){}
+                        else{
+                            numOfChecksTD.innerHTML = 'Number of Checks: '+numOfChecks;
+                        }
+                    }
+                    function recalcAmountTotal(){
+                        var totalAmount = 0;
+                        j$("#existCheckTable tr[id]").each(function(i,e){
+                            var rowTds = j$(e).find('td');
+                            var maxAmount = j$(rowTds[6]).html().replace('$','').replace(',','');
+                            maxAmount = Number.parseFloat(maxAmount);
+                            if(maxAmount!=null && maxAmount!= ''){
+                                totalAmount += Number.parseFloat(maxAmount);
+                            }
+                        });
+                        j$("#AmountTotal").html("$"+(totalAmount.toFixed(2)/2));
+                    }
+                    recalcAmountTotal();
+                    function doCheckRun(preview){
+                        j$ = jQuery.noConflict();
+                        batchDescription=j$("[id$='VICBDescription']").val();
+                        nextCheckNum= j$("[id$='NextCheckNumberId']").val();
+                        document.getElementById("spinner").style.display = "block";
+                        recalcAmount();
+                        var myArray = [];
+                        jQuery('#existCheckTable tr[id]:not(:contains("Total"))').each(function(i,e){
+                            var invId = jQuery(this).attr('Id');
+                            var invSel = jQuery(jQuery(this).find('.checkSelect input')[0]).prop('checked');
+                            if(invSel==true){
+                                var amtToPay = jQuery(jQuery(this).find('input.amtPay')[0]);
+                                if(amtToPay===undefined){}
+                                else{
+                                    amtToPay = amtToPay.val().replace('$','').replace(',','');
+                                    amtToPay = Number.parseFloat(amtToPay);	
+                                    if(invId===undefined){}
+                                    else{
+                                        var vid = jQuery(jQuery(e).find('.vid')[0]).html();
+                                        myArray.push({invId:invId, vid:vid,selected:invSel, amtToPay:amtToPay});
+                                    }
+                                }
+                            }
+                        });
+                        
+                        VendorCheckRunController.testPreviewCheckRA(myArray,preview,operatingChecks,batchDateUTC,batchDescription,nextCheckNum,paidManually,function(e){if(e[0].severityCode=='ERROR'){showMessageAF('',JSON.stringify(e));}else{showMessageAF('',JSON.stringify(e));if(e[0].redirectURL != null && e[0].redirectURL != ''){window.top.location.href=e[0].redirectURL;}}})
+                    }
+                    </script>
+                    
+                </apex:outputPanel>
+                <apex:pageBlock title="Invoices On Hold" mode="edit" >
+                    
+                    <apex:pageBlockTable id="INVOICETABLE2" styleClass="INVOICETABLE" value="{!NotPostedInvoices}" var="pi" rendered="{!NotPostedInvoices.size>0}">
+                        <apex:column >
+                            <apex:inputCheckbox value="{!pi.selected}" onchange="selectAllVendorAF('{!JSENCODE(pi.vendor)}',true)" rendered="{!pi.vi==null}">
+                            </apex:inputCheckbox>
+                            <apex:inputCheckbox value="{!pi.selected}" rendered="{!pi.vi!=null}">
+                                <apex:actionSupport event="onchange" reRender="INVOICESECTION" action="{!selectInvoice}" status="WORKING" rendered="{!pi.vi!=null}">
+                                    <apex:param name="p1" assignTo="{!selectedVendor}" value="{!pi.vi.Vendor__c}"/>
+                                    <apex:param name="p2" assignTo="{!selectedInvoice}" value="{!pi.vi.Id}"/>
+                                </apex:actionSupport>
+                            </apex:inputCheckbox>
+                            <apex:facet name="header"><apex:outputPanel >
+                                <apex:inputCheckbox value="{!selectAll}">
+                                    <apex:actionSupport event="onchange"  reRender="INVOICESECTION" action="{!selectAll}" status="WORKING">
+                                        <apex:param name="p1" value="true" assignTo="{!selectAllOnHold}"/>
+                                    </apex:actionSupport>
+                                </apex:inputCheckbox> Create Check? </apex:outputPanel>
+                            </apex:facet>
+                            <apex:facet name="footer">Number of Checks: {!numOfSelHoldChecks}</apex:facet>
+                        </apex:column>
+                        <apex:column headerValue="Vendor">
+                            <apex:outputField value="{!pi.vi.Vendor__c}" rendered="{!pi.vi!=null}"></apex:outputField>
+                            <apex:outputText value="{!pi.name}" rendered="{!pi.vi==null}"></apex:outputText>
+                        </apex:column>
+                        <apex:column headerValue="Invoice">
+                            <apex:outputLink value="/{!pi.vi.id}" rendered="{!pi.vi!=null}">{!pi.vi.Name}</apex:outputLink>
+                            <apex:inputText style="display: none" styleClass="totalAmountStyle" id="totalAmountID" rendered="{!pi.vi==null}" value="{!pi.totalAmount}"></apex:inputText>
+                        </apex:column>
+                        <apex:column headerValue="Invoice #"><apex:outputField value="{!pi.vi.Invoice_Number__c}" rendered="{!pi.vi!=null}"></apex:outputField></apex:column>
+                        <apex:column headerValue="Memo"><apex:inputText value="{!pi.memo}" rendered="{!pi.vi==null}"></apex:inputText></apex:column>
+                        <apex:column headerValue="Due Date"><apex:outputField value="{!pi.vi.Due_Date__c}" rendered="{!pi.vi!=null}"></apex:outputField></apex:column>
+                        <apex:column headerValue="Amount">
+                            <apex:outputText styleClass="{!IF(pi.vi == null, 'totalAmount','')}" id="TotalEmail" value="${!pi.amount}"></apex:outputText>
+                            <apex:facet name="footer">Total: ${!grandHoldTotal}</apex:facet>
+                        </apex:column>
+                        <apex:column headerValue="Amount to Pay">
+                            <apex:inputText value="{!pi.amountToPay}" rendered="{!pi.vi!=null && pi.selected==true}">
+                                <apex:actionSupport event="onchange" action="{!recalcTotal}" reRender="INVOICESECTION" status="WORKING"/>
+                            </apex:inputText>
+                        </apex:column>
+                        <apex:column headerValue="Check Run Total"><apex:outputText value="${!pi.checkRunAmount}" rendered="{!pi.checkRunAmount>0}"></apex:outputText><apex:facet name="footer">Run Total: ${!payingHoldAmount}</apex:facet></apex:column>
+                        <apex:column headerValue="Notes">
+                            <apex:outputField value="{!pi.vi.Notes__c}" rendered="{!pi.vi!=null}"/>
+                        </apex:column>
+                        <apex:column headerValue="Include Notes on Check">
+                            <apex:outputField value="{!pi.vi.Include_Notes_on_Check__c}" rendered="{!pi.vi!=null}"/>
+                        </apex:column>
+                    </apex:pageBlockTable>
+                </apex:pageBlock>
+                <apex:outputPanel rendered="{!PostedInvoices.size>0}">
+                    <script>
+                    <!--j$('table.INVOICETABLE').dataTable({
+                        sPaginationType: 'full_numbers',
+                        'aLengthMenu':[[40,100,500,1000,-1],[40,100,500,1000,'All']],
+                        'iDisplayLength':40,
+                        'aaSorting':[[1, 'asc'],[2, 'asc']]
+                    });
+                    var vcrIDT = j$('table.INVOICETABLE').dataTable();vcrIDT.api().page(vcrIDTPage).draw(false);
+                    </script>
+                </apex:outputPanel>
+                <apex:outputPanel rendered="{!NotPostedInvoices.size>0}">
+                    <script>-->
+                    j$('table.INVOICETABLE2').dataTable({
+                        sPaginationType: 'full_numbers',
+                        'aLengthMenu':[[100,500,1000,-1],[100,500,1000,'All']],
+                        'iDisplayLength':100,
+                        'aaSorting':[[1, 'asc'],[2, 'asc']]
+                    });
+                    </script>
+                </apex:outputPanel>
+                <button type="button" onclick="doCheckRun(true);return false;" style="float:right;" >Post Checks</button>
+            </apex:pageBlockSection>
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>

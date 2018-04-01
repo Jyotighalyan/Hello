@@ -1,0 +1,220 @@
+<apex:page standardController="contact" extensions="AccountHistoryPageController" sidebar="false">
+    <head>
+        <apex:includeScript value="https://code.jquery.com/jquery-1.12.4.min.js" />
+        <apex:includeScript value=" https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js" /> 
+        <!-- <apex:includescript value="{!URLFOR($Resource.jqueryDatatable_3embed,'/3embed/jquery.dataTables.min.js')}" /> -->
+        <apex:includeScript value="https://cdn.datatables.net/1.10.15/js/jquery.dataTables.min.js"/>
+        <apex:includeScript value="https://cdn.datatables.net/rowgroup/1.0.0/js/dataTables.rowGroup.min.js"/>
+
+        <!-- <apex:stylesheet value="{!URLFOR($Resource.jqueryDatatable_3embed,'/3embed/jquery.dataTables.min.css')}" /> -->
+        <apex:stylesheet value="https://cdn.datatables.net/1.10.15/css/jquery.dataTables.min.css"/>
+        <apex:stylesheet value="https://cdn.datatables.net/rowgroup/1.0.0/css/rowGroup.dataTables.min.css"/>
+        <!-- <apex:stylesheet value="{!URLFOR($Resource.EmbedDesignStylesheet,'/ThreeEmbedCustomStyle.css')}" />-->
+        <apex:styleSheet value="https://ajax.googleapis.com/ajax/libs/jqueryui/1.10.0/themes/smoothness/jquery-ui.css"/>
+    </head>
+    <script>
+    $.fn.dataTableExt.afnFiltering.push(
+		function(oSettings, aData, iDataIndex){
+			var dateStart = parseDateValue($("#min").val());
+			var dateEnd = parseDateValue($("#max").val());
+			// aData represents the table structure as an array of columns, so the script access the date value 
+			// in the first column of the table via aData[0]
+			var evalDate= parseDateValue(aData[0]);
+            if (dateStart == 'undefinedundefined' && dateEnd == 'undefinedundefined') {
+                return true;
+			}
+			else if (evalDate >= dateStart && evalDate <= dateEnd) {
+				return true;
+			}
+			else {
+				return false;
+			}
+			
+		});
+	function parseDateValue(rawDate) {
+        var dateArray= rawDate.split("/");
+        var parsedDate= dateArray[2] + dateArray[0] + dateArray[1];
+        return parsedDate;
+    }
+
+    </script>
+
+    <script type="text/javascript">
+    var jsTxnList = [];
+    
+    <apex:repeat value="{!txnList}" var="txn">
+      jsTxnList.push("{!JSENCODE(txn.id)}");
+    </apex:repeat> 
+
+    function getAccountBalance() {
+        var startdate = document.getElementById('min').value;
+        var startdate = new Date(startdate).toUTCString();             
+        Visualforce.remoting.Manager.invokeAction(
+            '{!$RemoteAction.AccountHistoryPageController.AccountBalanceByDate}',
+            startdate, 
+            jsTxnList,          
+            function(result, event){
+                if (event.status) {
+                    console.log(result);
+                    document.getElementById('accountbalance').innerHTML = '$' + result;
+                } else if (event.type === 'exception') {
+                    console.log(event.message);
+                } else {
+                    console.log(event.message);
+                }
+            }, 
+            {escape: true}
+        );
+    }
+    </script>
+    <script>
+     $(document).ready( function () { 
+         var table = $("#paymentTable").DataTable({
+            //'iDisplayLength': 5 
+             rowGroup: {
+                 endRender: null,
+                startRender: function ( rows, group ) {
+                    var salaryAvg = rows
+                        .data()
+                        .pluck(8)
+                        .reduce( function (a, b) {
+                            console.log('a: ' + a + ' b: ' + b);
+                            return +a + +b;
+                        });
+                    salaryAvg = $.fn.dataTable.render.number(',', '.', 2, '$').display( salaryAvg );
+     
+                    return $('<tr/>')
+                        .append( '<td colspan="3">'+group+'</td>' )
+                        .append( '<td></td>' )
+                    	.append( '<td></td>' )
+                    	.append( '<td></td>' )
+                    	.append( '<td></td>' )
+                        .append( '<td/>' )
+                        .append( '<td>'+salaryAvg+'</td>' );
+                },
+                 dataSrc: 2
+             },
+             "footerCallback": function ( row, data, start, end, display ) {
+                 var api = this.api(), data;
+                 console.log('footercallback');
+                 // Remove the formatting to get integer data for summation
+                 var intVal = function ( i ) {
+                     return typeof i === 'string' ?
+                         i.replace(/[\$,]/g, '')*1 :
+                     typeof i === 'number' ?
+                         i : 0;
+                 };
+              
+                 // Total over all pages
+                 total = api
+                 .column( 8 )
+                 .data()
+                 .reduce( function (a, b) {
+                     return intVal(a) + intVal(b);
+                 }, 0 );
+                 
+                 // Total over this page
+                 pageTotal = api
+                 .column( 8, { page: 'current'} )
+                 .data()
+                 .reduce( function (a, b) {
+                     return intVal(a) + intVal(b);
+                 }, 0 );
+                 console.log('total: ' + total);
+                 console.log('total: ' + pageTotal);
+                 // Update footer
+                 pageTotal = $.fn.dataTable.render.number(',', '.', 2, '$').display( pageTotal );
+                 $( api.column(8).footer() ).html(
+                     pageTotal 
+                 );
+                 
+             }
+             
+          });
+        $( function() {
+            var date = new Date();
+            var firstDay = new Date(date.getFullYear(), date.getMonth() + 1, 1);
+            var lastDay = new Date(date.getFullYear(), date.getMonth() + 2, 0);
+            
+            $( ".datepicker" ).datepicker();
+            
+            
+            
+            //$('#min').val(firstDay.getMonth() + '/' + firstDay.getDate() + '/' + firstDay.getFullYear());
+            //$('#max').val(lastDay.getMonth() + '/' + lastDay.getDate() + '/' + lastDay.getFullYear());
+            $('#min').val( ('0' + (firstDay.getMonth())).slice(-2) + '/' + ('0' +firstDay.getDate()).slice(-2)  + '/' + firstDay.getFullYear());
+            $('#max').val( ('0' + (lastDay.getMonth())).slice(-2) + '/' + ('0' +lastDay.getDate()).slice(-2)  + '/' + lastDay.getFullYear());
+            table.draw();
+        });
+        $('#min').change( function() { table.draw(); } );
+        $('#max').change( function() { table.draw(); } );
+        getAccountBalance();
+    
+    });
+    
+    </script>
+    <apex:outputPanel layout="block">
+           	<table id = "paymentTable" style="width:100%; padding-top:20px;">
+                <input type="hidden"/>
+                       
+                    <p style="margin: 10px;">
+                        Account balance as of Start Date:
+                        <b id="accountbalance">{!AccountBalanceByDate}</b>
+                    </p>
+                	 <p style="margin: 10px;">
+                        Current Account Balance:
+                        <b id="accountbalance">${!CurrentAccountBalanceFormat}</b>
+                    </p>
+                    <p style="margin: 10px;">
+                        Date Start:
+                        <input type="text" id="min" class="datepicker" value="{!startDate}" onchange="getAccountBalance()"/>
+                        <!-- <apex:inputText id="min" styleClass="datepicker" value="{!startDate}">
+                            <apex:actionsupport event="onchange" rerender="debugBlock" />
+                        </apex:inputText> -->
+                        Date End:
+                        <input type="text" id="max" class="datepicker" value="{!endDate}"/>
+                    </p>
+                   
+               <thead>
+                   <tr>
+                        <th class = "colHeadr">Date</th>
+                        <th class = "colHeadr">Bill To Member</th>
+                        <th class = "colHeadr">Customer</th>
+                       	<th class = "colHeadr">Record Type</th>
+                        <th class = "colHeadr">Transaction</th>
+                        <th class = "colHeadr">Description</th>
+                        <th class = "colHeadr">Type</th>
+                       <th class = "colHeadr">Sub Type</th>
+                       <th class = "colHeadr">Total Amount</th>
+                   </tr>
+               </thead>
+                <tfoot>
+                    <tr>
+                        <th colspan="8" style="text-align:right">Total:</th>
+                        <th></th>
+                    </tr>
+                </tfoot>
+               <tbody>
+               	   <!-- <apex:repeat value="{!txnList}" var="t"> -->
+                   <apex:repeat value="{!txnList}" var="t">
+                       <tr>
+                           
+                           <td class = "colHeadr">
+                               <apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                                                    <apex:param value="{!t.Date__c}" /> 
+                                                </apex:outputText>
+                               </td>
+                           <td class = "colHeadr">{!t.Bill_To_Member__r.Name}</td>
+                           <td class = "colHeadr">{!t.Customer__r.Name}</td>
+                           <td class = "colHeadr">{!t.RecordType.Name}</td>
+                           <td class = "colHeadr"><apex:outputLink value="/{!t.id}">{!t.Name}</apex:outputLink></td>
+                           <td class = "colHeadr">{!t.Description__c}</td>
+                           <td class = "colHeadr">{!t.GlobalType__c}</td>
+                           <td class = "colHeadr">{!t.GlobalSubType__c}</td>
+                           <td class = "colHeadr">{!t.Total_Amount__c}</td>
+                       </tr>    
+                   </apex:repeat>
+               </tbody>
+           </table>
+       </apex:outputPanel>
+</apex:page>

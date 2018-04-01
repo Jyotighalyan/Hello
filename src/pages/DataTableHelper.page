@@ -1,0 +1,3 @@
+<apex:page contentType="text/plain" showHeader="false" sidebar="false" applyHtmlTag="false" controller="DataTableHelper" action="{!processData}">
+  <apex:outputText value="{!dataTableJson }"></apex:outputText>
+</apex:page>

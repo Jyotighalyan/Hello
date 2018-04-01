@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <actionOverrides>
+        <actionName>Accept</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>CancelEdit</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>Clone</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>Delete</actionName>
+        <content>DueSummaryDetail</content>
+        <skipRecordTypeSelect>false</skipRecordTypeSelect>
+        <type>Visualforce</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>Edit</actionName>
+        <content>DueSummaryDetail</content>
+        <skipRecordTypeSelect>false</skipRecordTypeSelect>
+        <type>Visualforce</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>Follow</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>List</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>New</actionName>
+        <content>DueSummaryDetail</content>
+        <skipRecordTypeSelect>false</skipRecordTypeSelect>
+        <type>Visualforce</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>SaveEdit</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>Tab</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>View</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <allowInChatterGroups>false</allowInChatterGroups>
+    <compactLayoutAssignment>SYSTEM</compactLayoutAssignment>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <description>the object is used to store due summary records and the failed records</description>
+    <enableActivities>false</enableActivities>
+    <enableBulkApi>true</enableBulkApi>
+    <enableFeeds>false</enableFeeds>
+    <enableHistory>false</enableHistory>
+    <enableReports>false</enableReports>
+    <enableSearch>false</enableSearch>
+    <enableSharing>true</enableSharing>
+    <enableStreamingApi>true</enableStreamingApi>
+    <fields>
+        <fullName>Amount__c</fullName>
+        <externalId>false</externalId>
+        <label>Amount</label>
+        <precision>18</precision>
+        <required>false</required>
+        <scale>2</scale>
+        <trackTrending>false</trackTrending>
+        <type>Currency</type>
+    </fields>
+    <fields>
+        <fullName>Billing_Period__c</fullName>
+        <description>the field is used to store billing month</description>
+        <externalId>false</externalId>
+        <label>Billing Period</label>
+        <length>255</length>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>Text</type>
+        <unique>false</unique>
+    </fields>
+    <fields>
+        <fullName>Contact__c</fullName>
+        <deleteConstraint>SetNull</deleteConstraint>
+        <externalId>false</externalId>
+        <label>Contact</label>
+        <lookupFilter>
+            <active>true</active>
+            <filterItems>
+                <field>Contact.RecordType.Name</field>
+                <operation>equals</operation>
+                <value>Member</value>
+            </filterItems>
+            <isOptional>false</isOptional>
+        </lookupFilter>
+        <referenceTo>Contact</referenceTo>
+        <relationshipLabel>Dues Summary</relationshipLabel>
+        <relationshipName>Dues_Summary</relationshipName>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>Lookup</type>
+    </fields>
+    <fields>
+        <fullName>Due_Summary__c</fullName>
+        <deleteConstraint>SetNull</deleteConstraint>
+        <description>field is used to store due summary record for dues created</description>
+        <externalId>false</externalId>
+        <label>Dues Summary</label>
+        <referenceTo>Dues_Summary__c</referenceTo>
+        <relationshipLabel>Dues/Taxes</relationshipLabel>
+        <relationshipName>Dues_Summary1</relationshipName>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>Lookup</type>
+    </fields>
+    <fields>
+        <fullName>Financial_Journal_Entry__c</fullName>
+        <deleteConstraint>SetNull</deleteConstraint>
+        <externalId>false</externalId>
+        <label>Financial Journal Entry</label>
+        <referenceTo>Financial_Journal_Entry__c</referenceTo>
+        <relationshipLabel>Dues Summary</relationshipLabel>
+        <relationshipName>Dues_Summary</relationshipName>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>Lookup</type>
+    </fields>
+    <fields>
+        <fullName>Member_Dues__c</fullName>
+        <deleteConstraint>SetNull</deleteConstraint>
+        <externalId>false</externalId>
+        <label>Member Dues</label>
+        <referenceTo>Member_Dues__c</referenceTo>
+        <relationshipLabel>Dues Summary</relationshipLabel>
+        <relationshipName>Dues_Summary</relationshipName>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>Lookup</type>
+    </fields>
+    <fields>
+        <fullName>Post_Date__c</fullName>
+        <description>the field is used to store the due date</description>
+        <externalId>false</externalId>
+        <label>Post Date</label>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>Date</type>
+    </fields>
+    <fields>
+        <fullName>Posted__c</fullName>
+        <defaultValue>false</defaultValue>
+        <externalId>false</externalId>
+        <label>Posted</label>
+        <trackTrending>false</trackTrending>
+        <type>Checkbox</type>
+    </fields>
+    <fields>
+        <fullName>Service_Charge_Name__c</fullName>
+        <externalId>false</externalId>
+        <label>Service Charge Name</label>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>TextArea</type>
+    </fields>
+    <fields>
+        <fullName>Service_Charge__c</fullName>
+        <externalId>false</externalId>
+        <label>Service Charge</label>
+        <precision>18</precision>
+        <required>false</required>
+        <scale>2</scale>
+        <trackTrending>false</trackTrending>
+        <type>Currency</type>
+    </fields>
+    <fields>
+        <fullName>Tax_Amount__c</fullName>
+        <externalId>false</externalId>
+        <label>Tax Amount</label>
+        <precision>18</precision>
+        <required>false</required>
+        <scale>2</scale>
+        <trackTrending>false</trackTrending>
+        <type>Currency</type>
+    </fields>
+    <fields>
+        <fullName>Tax_Applied_On_Service_Charge__c</fullName>
+        <defaultValue>false</defaultValue>
+        <externalId>false</externalId>
+        <label>Tax Applied On Service Charge</label>
+        <trackTrending>false</trackTrending>
+        <type>Checkbox</type>
+    </fields>
+    <fields>
+        <fullName>Tax_Name__c</fullName>
+        <description>stores the name of the tax</description>
+        <externalId>false</externalId>
+        <label>Tax Name</label>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>TextArea</type>
+    </fields>
+    <fields>
+        <fullName>Total_Amount__c</fullName>
+        <externalId>false</externalId>
+        <formula>Amount__c  + Service_Charge__c  +  Tax_Amount__c</formula>
+        <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
+        <label>Total Amount</label>
+        <precision>18</precision>
+        <required>false</required>
+        <scale>2</scale>
+        <trackTrending>false</trackTrending>
+        <type>Currency</type>
+    </fields>
+    <label>Dues Summary</label>
+    <nameField>
+        <displayFormat>DUESUM-{0000000}</displayFormat>
+        <label>Dues Summary Name</label>
+        <type>AutoNumber</type>
+    </nameField>
+    <pluralLabel>Dues Summary</pluralLabel>
+    <recordTypes>
+        <fullName>Due_Summary</fullName>
+        <active>true</active>
+        <description>Recordtype is used to store due summaries</description>
+        <label>Due Summary</label>
+    </recordTypes>
+    <recordTypes>
+        <fullName>Dues</fullName>
+        <active>true</active>
+        <description>generated dues</description>
+        <label>Dues</label>
+    </recordTypes>
+    <recordTypes>
+        <fullName>Taxes</fullName>
+        <active>true</active>
+        <description>to store taxes for dues</description>
+        <label>Taxes</label>
+    </recordTypes>
+    <searchLayouts/>
+    <sharingModel>ReadWrite</sharingModel>
+    <validationRules>
+        <fullName>CheckBillingMonth</fullName>
+        <active>true</active>
+        <description>should allow only month names in billing month field</description>
+        <errorConditionFormula>NOT(OR( ISBLANK(Billing_Period__c  ), Billing_Period__c  ==&apos;January&apos;,Billing_Period__c  =&apos;February&apos;,Billing_Period__c  =&apos;March&apos;,Billing_Period__c  =&apos;April&apos;,Billing_Period__c  =&apos;May&apos;,Billing_Period__c  =&apos;June&apos;,Billing_Period__c  =&apos;July&apos;,Billing_Period__c  =&apos;August&apos;,Billing_Period__c  =&apos;September&apos;,Billing_Period__c  =&apos;October&apos;,Billing_Period__c  =&apos;November&apos;,Billing_Period__c  =&apos;December&apos;))</errorConditionFormula>
+        <errorDisplayField>Billing_Period__c</errorDisplayField>
+        <errorMessage>Month name is not valid</errorMessage>
+    </validationRules>
+</CustomObject>

@@ -1,0 +1,144 @@
+<apex:page controller="AccountsPayableController" showHeader="true" sidebar="true">
+
+    <apex:includescript value="{!URLFOR($Resource.jqueryDatatable_3embed,'/3embed/jquery-1.11.1.min.js')}" />
+    <apex:includescript value="{!URLFOR($Resource.jqueryDatatable_3embed,'/3embed/jquery.dataTables.min.js')}" />
+    <apex:stylesheet value="{!URLFOR($Resource.jqueryDatatable_3embed,'/3embed/jquery.dataTables.min.css')}" />
+   
+    <script>
+        $(document).ready(function(){
+        // $('[id$=unpstdInvList]').dataTable();
+    })
+
+        function postAll(cb){
+            if($(cb).is(':checked')){
+                $(".tableUn tbody tr td:nth-child(2)").each(function (i) {
+                    $(this).find('input').prop('checked', true);
+                });
+            }
+            else{
+                $(".tableUn tbody tr td:nth-child(2)").each(function (i) {
+                    $(this).find('input').prop('checked', false);
+                });
+            }
+        }
+
+        function takeConfirmationfun(){
+            postEntry('confirm');
+        }
+    </script>
+    <apex:pageMessages id="msgsId"/>
+    <apex:actionStatus id="WORKING" >
+            <apex:facet name="start">
+                <div class="waitingSearchDiv" style="background-color: #000;
+                       height: 100%;filter: alpha(opacity=50);opacity:0.5;width:100%;">
+                </div>
+                <div class="waitingSearchDiv" style="z-index:999;width:100%">
+                    <div class="waitingHolder" style="z-index:999;top: 175px; left: 20px; width: 200px;height: 25px;background-color: #fff;border: 1px solid black;border-radius: 5px;padding-top: 10px;color: #000;">
+                        <span class="waitingDescription" style="color:#000;">Working...</span>
+                        <img class="waitingImage" src="/img/loading.gif" title="Please Wait..." />
+                    </div>
+                </div>
+            </apex:facet>
+        </apex:actionStatus>
+    <apex:form id="frm">
+        <apex:actionFunction name="postEntry" status="WORKING" action="{!postEnteries}" reRender="frm, msgsId">
+            <apex:Param name="confirmMsg" value="" assignTo="{!takeConfirm}"/>
+        </apex:actionFunction>
+        <script>
+            if('{!isAlreadyPosted}'=='true'){
+                if(!confirm('This invoice is already posted.\nClick ok to continue.'))
+                    window.location = "/{!currentVendInv.id}"
+            }
+            if(parseFloat('{!JSENCODE(HTMLENCODE(TEXT(numberOfFailedPosting)))}')>0 && '{!JSENCODE(HTMLENCODE(takeConfirm))}'=='confirm'){
+                if('{!JSENCODE(HTMLENCODE(TEXT(numberOfFailedPosting)))}'=='{!JSENCODE(HTMLENCODE(TEXT(numberOfSelectedInvoices)))}'){
+                    alert('The selected invoice can not be posted because Invoice Amount is not equal to its Invoice Lines Amount.');
+                }
+                else if(confirm('Skipping {!JSENCODE(HTMLENCODE(TEXT(numberOfFailedPosting)))} Invoice entries because of Invoice Amount is not equal to sum of its Invoice Lines Amount.\nClick ok to post other entries.'))
+                    postEntry('post');
+            }
+            else if('{!JSENCODE(HTMLENCODE(takeConfirm))}'=='confirm'){
+                postEntry('post');     
+            }
+            if('{!JSENCODE(HTMLENCODE(takeConfirm))}'=='post'){
+                if(parseFloat('{!JSENCODE(HTMLENCODE(TEXT(numberOfPostedInv)))}')>0){
+                    alert('Invoice entries posted successfully : {!JSENCODE(HTMLENCODE(TEXT(numberOfPostedInv)))}');
+                }
+            }
+        </script>
+
+        <apex:pageBlock id="vendorBlock" title="Accounts Payable">
+            <table style="width:100%;">
+                <tbody>
+                    <tr>
+                        <td style="width:20%">Start Date :&nbsp;<apex:inputField required="false" value="{!vendInvForDate.Invoice_Date__c}" label="Start Date"/></td>
+                        <td style="width:20%">End Date :&nbsp;<apex:inputField required="false" value="{!vendInvForDate.Due_Date__c}" label="End Date"/></td>
+                        <td style="width:15%"></td>
+                        <td style="width:15%"></td>
+                        <td style="width:15%"></td>
+                        <td style="width:15%"></td>
+                    </tr>
+                </tbody>
+            </table>
+            <br/>
+            <table style="width:100%;">
+                <tbody>
+                    <tr>
+                        <td style="width:20%"></td>
+                        <td style="width:10%"><apex:commandButton status="WORKING" value="Search AP Entries" action="{!SearchAPEnteries}" styleClass="vendButton" reRender="UnpostedVendorInvoices, todayPostedBlock, msgsId"/></td>
+                        <td style="width:65%"></td>
+                        <td style="width:10%"><apex:commandButton status="WORKING" value="Create New Vendor Invoice" onclick="window.open('{!URLFOR($Action.Vendor_Invoice__c.New)}');return false" styleClass="vendButton"/></td>
+                        <td style="width:5%"><apex:commandButton value=" Check Run " onclick="window.open('{!$Page.VendorCheckRun}');return false"/></td>
+                    </tr>
+                </tbody>
+            </table>
+        </apex:pageBlock>
+
+        <apex:outputPanel id="UnpostedVendorInvoices">
+            <apex:pageBlock title="Unposted Vendor Invoices">
+                <apex:pageBlockSection columns="3">
+                    <apex:pageBlockSectionItem ><apex:outputPanel ><p style="margin-top: 10px;">
+
+                    <b>Post Date : &nbsp;<span class="requiredInput"><span class="requiredBlock"></span><apex:inputField value="{!vendInvForDate.Post_Date__c}"/></span></b>
+                    </p></apex:outputPanel></apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem />
+                    <apex:pageBlockSectionItem ><apex:commandButton value="Post Selected Account Payable Entries" StyleClass="vendButton" onclick="takeConfirmationfun(); return false;" style="align: right"/></apex:pageBlockSectionItem>
+                </apex:pageBlockSection>
+                <apex:pageBlockSection columns="1">
+                    <apex:pageBlockTable value="{!unpostedVenInvList}" id="unpstdInvList"  var="UnpstdVInv" styleClass="tableUn">
+                        <apex:column headerValue="Vendor Invoice Name"><apex:outputLink value="/{!UnpstdVInv.id}" target="_blank">{!UnpstdVInv.Name}</apex:outputLink></apex:column>
+                        <apex:column headerValue="Posted?"><apex:inputField value="{!UnpstdVInv.Post_Status__c}"/></apex:column>
+                        <apex:column value="{!UnpstdVInv.Vendor__c}"/>
+                        <apex:column value="{!UnpstdVInv.Invoice_Number__c}"/>
+                        <apex:column value="{!UnpstdVInv.Amount__c}"/>
+                        <apex:column value="{!UnpstdVInv.Invoice_Date__c}"/>
+                        <apex:column value="{!UnpstdVInv.Due_Date__c}"/>
+                    </apex:pageBlockTable>
+                </apex:pageBlockSection>
+            </apex:pageBlock>
+            <script>
+                var someRow= "&nbsp;&nbsp;/ Post All?<input type='checkbox' onchange='postAll(this);'/>";
+                $('.tableUn th').eq(1).find('div').append( someRow );
+            </script>
+        </apex:outputPanel>
+        <br/><br/>
+        <apex:outputPanel id="postedInv">
+            <apex:pageBlock id="todayPostedBlock" title="Posted Vendor Invoices">
+                    <apex:pageBlockSection columns="1">
+                    <apex:pageBlockTable value="{!postedVenInvList}" id="todayPosted"  var="UnpstdVInv" styleClass="tableUn">
+                        <apex:column headerValue="Vendor Invoice Name"><apex:outputLink value="/{!UnpstdVInv.id}" target="_blank">{!UnpstdVInv.Name}</apex:outputLink></apex:column>
+                        <apex:column headerValue="Posted?" value="{!UnpstdVInv.Post_Status__c}"/>
+                        <apex:column value="{!UnpstdVInv.Vendor__c}"/>
+                        <apex:column value="{!UnpstdVInv.Invoice_Number__c}"/>
+                        <apex:column value="{!UnpstdVInv.Amount__c}"/>
+                        <apex:column value="{!UnpstdVInv.Invoice_Date__c}"/>
+                        <apex:column value="{!UnpstdVInv.Due_Date__c}"/>
+                        <apex:column value="{!UnpstdVInv.Posted_Date__c}"/>
+                    </apex:pageBlockTable>
+                    <script>
+                    $('[id$=todayPosted]').dataTable();
+                    </script>
+                </apex:pageBlockSection>
+            </apex:pageBlock>
+        </apex:outputPanel>
+    </apex:form>
+</apex:page>

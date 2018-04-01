@@ -1,0 +1,758 @@
+<apex:page docType="html-5.0" controller="TxnAdjustChargeController" standardStylesheets="false">
+    <head>
+        <apex:includescript value="{!URLFOR($Resource.jqueryDatatable_3embed,'/3embed/jquery-1.11.1.min.js')}" />
+        <apex:includescript value="{!URLFOR($Resource.jqueryDatatable_3embed,'/3embed/jquery.dataTables.min.js')}" />
+        <apex:includeScript value="https://cdnjs.cloudflare.com/ajax/libs/selectize.js/0.11.2/js/standalone/selectize.min.js"/>
+        <apex:stylesheet value="{!URLFOR($Resource.jqueryDatatable_3embed,'/3embed/jquery.dataTables.min.css')}" />
+        <apex:stylesheet value="https://cdnjs.cloudflare.com/ajax/libs/selectize.js/0.11.2/css/selectize.min.css"/>
+    </head>   
+    <script> 
+    $(document).ready(function() {
+        $("#paymentTable").DataTable({
+            "footerCallback": function ( row, data, start, end, display  ) {
+                var api = this.api(), data;
+                // Remove the formatting to get integer data for summation
+                var intVal = function ( i ) {
+                    return typeof i === 'string' ?
+                        i.replace(/[\$,]/g, '')*1 :
+                    typeof i === 'number' ?
+                        i : 0;
+                };                
+                // Total over all pages
+                totalAmount = api
+                .column( 4 )
+                .data()
+                .reduce( function (a, b) {
+                    return intVal(a) + intVal(b);
+                }, 0 );      
+                totalAmount = totalAmount.toFixed(2);
+                $(api.column(4).footer()).html(
+                    '$'+ totalAmount
+                );                        
+            }                        
+        });
+        
+   
+    });
+    $(document).ready(function() {
+        initSearchable();
+    });
+
+    function initSearchable() {
+        $('.searchable').selectize({
+            create: false,
+            searchField: ['text'],
+            sortField: {
+                field: 'text',
+                direction: 'asc'
+            },
+            openOnFocus: false,
+            onDropdownOpen: function(){
+                var yPos = mouseYPos;
+                var currentPos = $(window).scrollTop();
+                var totalSize =  $(window).height();
+                if(yPos+200>totalSize){
+                    $(window).scrollTop(currentPos+200);
+                }
+            },
+        });
+    }
+
+    function validateFutureDate(dateFieldId) {
+        var selectedDate = document.getElementById(dateFieldId).value;
+        var today = "{!todayDate}";
+        var parseselectedDate = Date.parse(selectedDate);
+        var parsetoday = Date.parse(today);
+        if (parseselectedDate > parsetoday) {
+            if (!confirm("You are about to enter a transaction into the future, is this correct?")) {
+                return false;
+            }
+        }
+    }      
+    
+    function submitCharge() {
+        doSubmitCharge();
+    }
+    /*This function will hide and show the different forms based on the selection of (record type or type)
+        i.e payment form will be get shown when payment record type will be selected from the dropdown and all other forms will be get hidden*/
+    function hideAndShowForms(selectedOption) {
+        var selectedLayout = $(selectedOption).find('option:selected').text();
+        switch (selectedLayout) {
+            case "Payment":
+                $("#paymentForm").show();
+                break;
+            default:
+                $("paymentForm").hide();
+        }
+        RecordTypeChange();
+    }
+    
+    
+    /*This method will show and hide the payment method fields based on the selection
+        of payment method from the dropdown i.e If the selected payment method is check than it will show "Check Number and Check Date" fields*/
+    function hideAndShowPaymentSection(selectedPaymentType) {
+        var paymentMethodSelectedText = $(selectedPaymentType).find("option:selected").val();
+        $(".paymentBlock").hide();
+        switch (paymentMethodSelectedText) {
+            case "Check":
+                $("#checkSection").show();
+                $("#ExternalCreditCardSection").hide();
+                $("#creditCardAch").hide();
+                
+                break;
+            case "ExternalCreditCard":
+                $("#ExternalCreditCardSection").show();
+                $("#checkSection").hide();
+                $("#creditCardAch").hide();
+                
+                break;
+            case "CreditCard":
+                $("#creditCardAch").show();
+                $("#checkSection").hide();
+                $("#ExternalCreditCardSection").hide();
+                
+                break;
+            default:
+                $("#checkSection").hide();
+                $("#creditCardAch").hide();
+                $("#ExternalCreditCardSection").hide();
+                
+        }
+    }
+
+    function hideChargeAmountOnTypeSelection()
+    {
+      
+    }
+    /*This method will hide and show the charges table based on the selection of manual paying checkbox*/
+    function hideAndShowChargesTable(checkBoxStatus) {
+        var isPayingManually = $(checkBoxStatus).prop("checked");
+        if (isPayingManually) {
+            var amt = (0.000).toFixed(2);
+            if ($('[id$=paymentAmount]').val() != '')
+                amt = parseFloat($('[id$=paymentAmount]').val()).toFixed(2);
+            
+            $('#remaining_Payment_amount').text(amt);
+            $('#Payment_amount').text(amt);
+            
+            $("#chargesTable").show();
+            return;
+        }
+        $("#chargesTable").hide();
+    }              
+    $('.Payment_method').hide();
+    function show_payment_method(Type){
+        var type=$(Type).find("option:selected").val();        
+        if(type=='012o000000046WJAAY'){
+            $('.Payment_method').show();
+        }else{
+            
+            $('.Payment_method').hide();
+        }
+    }
+    
+    $('.paymentBlockCard').hide(); 
+    $('.paymentBlockExternal').hide(); 
+    $('.paymentBlockCheck').hide();
+    
+    if($('[id$=PayemntTypes]').val()=='ExternalCreditCard'){ 
+        
+        $('.paymentBlockExternal').show();                          
+    }
+    if($('[id$=PayemntTypes]').val()=='CreditCard'){ 
+        
+        $('.paymentBlockCard').show();                          
+    }
+    if($('[id$=PayemntTypes]').val()=='Check'){ 
+        
+        $('.paymentBlockCheck').show();                         
+    }
+    if($('[id$=RecordTypeFromDb]').val()=='012o000000046WJAAY'){ 
+        
+        $('.Payment_method').show();                        
+    }        
+    
+    function chargeNowJS(){ 
+        disablebutton();
+        var paymentTypes=$('[id$=PayemntTypes]').val();                           
+        if(typeof bmcSaveBillAddrAF == 'function' && paymentTypes=='CreditCard')
+        {              
+            bmcCallBackMethod = PaydoSave;
+            bmcSaveBillAddrAF();                
+        }
+        else{           
+            PaydoSave();               
+        } 
+        
+    };
+    function disablebutton()
+    {
+        $('[id$=btn]').prop("disabled",true);  
+    }
+    
+    function enablebutton()
+    {
+        $('[id$=btn]').prop("disabled",false);
+        
+    }
+    
+    function PaydoSave(node){             
+        var paymentTypes=$('[id$=PayemntTypes]').val();                           
+        if(paymentTypes=='CreditCard'){
+            if(bmcPaymentId!="")
+            {
+                $('[id$=transactionId]').val(bmcPaymentId);     
+            }  else{
+                alert('Payment failed. Try again later.');    
+            }
+        }else{
+            bmcPaymentId='';
+            $('[id$=transactionId]').val(''); 
+            }                         
+        var arr = {"data": allChargesJson};      
+        paraFunction(JSON.stringify(arr));
+        
+    }       
+    </script>   
+    <style>
+        body .bPageBlock .pbBody .red .pbSubheader{
+        background-color:#6666FF;
+        } 
+        .panelWrapper .mainTitle 
+        {
+        background-color: #6666FF !important;
+        color:white !important;
+        
+        }
+        
+         .popup
+        {
+        background-color: white;
+        border-width: 2px;
+        border-style: solid;
+        z-index: 9999;
+        left: 50%;
+        padding:10px;
+        position: absolute;
+        width: 500px;
+        margin-left: -250px;
+        top:80px;
+        }
+        
+        .popupBg
+        {
+        background-color:black;
+        opacity: 0.20;
+        filter: alpha(opacity = 70);
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+        z-index: 9998;
+        }
+        
+        .vfHelpText a            {position:relative;}
+        .vfHelpText a span       {display: none;}
+        .vfHelpText a:hover span {display: block;
+                                  position:absolute;
+                                  top:1.25em;
+                                  padding:2px 5px;
+                                  left:-15em; width:15em;
+                                  z-index:100;
+                                  border:1px solid orange;
+                                  background-color:#FEFDB9;
+                                  color:black;
+                                 }
+       
+     body .bPageBlock .pbBody .red .pbSubheader{
+        background-color:#1797c0;
+        }
+    
+        
+        
+    </style>  
+    
+    <apex:pageBlock > 
+        <apex:outputPanel styleClass="red" >
+            <apex:pageBlockSection title="{!memName}"><a href='{!FromLink}'><b>{!breadCrumb}</b></a> > <b>{!currentPage}</b></apex:pageBlockSection>
+        </apex:outputPanel>
+        <apex:pageBlockSection id="errmsgs">
+            <apex:pageMessages id="msgs" escape="false"></apex:pageMessages>
+        </apex:pageBlockSection> 
+        <style>
+        #finlink{
+          color: green;
+        }
+        #finlink:hover {
+         color: red;
+        }    
+        </style>        
+    </apex:pageBlock>
+    
+    <apex:pageBlock rendered="{!EditPg1}"  > 
+        <a href="/{!ChargeId}">(View Default Detail page)</a>
+    </apex:pageBlock>
+        
+    <apex:pageBlock id="msgs">
+        <apex:form id="ChargeForm">            
+            <apex:outputPanel >                            
+            <apex:actionstatus id="loading">
+                <apex:facet name="stop"></apex:facet>
+                <apex:facet name="start">
+                    <div class="waitingSearchDiv" id="el_loading" style="z-index:999;width:100%">
+                        <div class="waitingHolder" style="z-index:999; opacity:1.0;position:fixed;top:200px;right:50%;margin-right:-100px; width: 100px;height: 25px;background-color: #fff;border: 1px solid black;border-radius: 5px;padding-top: 10px;color: #000;">
+                            <img class="waitingImage" src="/img/loading.gif" title="Please Wait..." />
+                            <span class="waitingDescription" style="color:#000; opacity:1.0;">Working...</span>
+                        </div>
+                    </div>
+                </apex:facet>
+            </apex:actionstatus>
+         <apex:inputHidden value="{!ChargeType}" id="companyDef"/>
+         <apex:inputHidden value="{!ChargeSubType}" id="companyDef1"/>
+         <apex:actionFunction name="doSubmitCharge" action="{!save}" status="loading" oncomplete="doSendToAuthorizeAF();" rerender="form,MSGS,errmsgs">
+            <apex:param name="p1" value="" assignTo="{!paymentMethodId}"/>
+         </apex:actionFunction>
+            
+         <apex:outputPanel styleClass="red" >
+            <apex:pageBlockSection collapsible="false" title="Select Types" columns="2" >
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Charge Item :"  />
+                    <apex:outputPanel layout="block">
+                         <apex:outputField value="{!othCharge.Charge_Item__r.Name}" id="nameID" />
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Quantity :"  />
+                    <apex:outputPanel layout="block">
+                        <apex:outputField value="{!othCharge.Quantity__c}" id="QtyID" />
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Statement Description :" />
+                        <apex:outputPanel layout="block">
+                            <apex:outputField value="{!othCharge.Statement_Description__c}" id="DescID" />
+                        </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Notes :"  />
+                    <apex:outputPanel layout="block">
+                        <apex:outputField value="{!othCharge.Internal_Notes__c}"  />
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Date :" />
+                        <apex:outputPanel layout="block">
+                            <apex:outputField value="{!othCharge.Date__c}" id="DateID" />
+                        </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Charge Date :"/>
+                        <apex:outputPanel layout="block">
+                            <div class="requiredInput">
+                                 <apex:inputField type="date" onchange="validateFutureDate(this);" value="{!othCharge.Date__c}" style="width: 40%;" id="DateFromDB"/>
+                            </div>                           
+                        </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Charge Amount :"/>
+                        <apex:outputPanel layout="block">
+                            <apex:outputField value="{!othCharge.Amount__c}" id="AmountID" />
+                        </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem > 
+                    <apex:outputLabel value="Adjustment Quantity :" />
+                    <apex:outputPanel >
+                        <apex:inputField value="{!adjustmentCharge.Quantity__c}" id="adjQtyID" onkeyup="calculateAdjustment()" onmouseup="calculateAdjustment()" />
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Adjustment Amount :" />
+                    <apex:outputPanel >
+                        <apex:inputText value="{!adj_Amount}" id="adj_amount" html-readonly="true"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Adjustment Reason :" />
+                    <apex:outputPanel >
+                        <apex:inputField value="{!adjustmentCharge.Adjustment_Reason__c}" id="adj_reason"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem />
+                
+            </apex:pageBlockSection>
+             
+        </apex:outputPanel>              
+                
+        <script>
+                /*$(document).ready(function() {
+            $(".dbl-mask").mask("999 999 999.99");});*/
+</script> 
+                
+                 <script>
+                if(!{!DetailPage})
+ $("#AdjustedBlock").hide();
+                </script>
+               
+        <apex:outputPanel styleClass="red">
+			<apex:pageBlockSection collapsible="false" title="Taxes and Service Charges" columns="1">
+                    <apex:pageblockTable value="{!othChargeRelatedTaxesWrapper}" var="relatedTXNs">
+                    <apex:column value="{!relatedTXNs.txn.Name}" >
+                        <apex:facet name="header">Name</apex:facet>
+                    </apex:column>
+                    <apex:column value="{!relatedTXNs.txn.Service_Charge_Name__c}" >
+                        <apex:facet name="header">Service Charge Name</apex:facet>
+                    </apex:column>
+                    <apex:column value="{!relatedTXNs.txn.Tax_Name__c}" >
+                        <apex:facet name="header">Tax Name</apex:facet>
+                    </apex:column>
+                    <apex:column value="{!relatedTXNs.txn.Date__c}">
+                        <apex:facet name="header">Date</apex:facet>
+                    </apex:column>
+                    <apex:column value="{!relatedTXNs.txn.Amount__c}" id="taxesAmountID">
+                        <apex:facet name="header">Amount ($)</apex:facet>
+                    </apex:column>
+                     <apex:column >
+                        <apex:facet name="header">Adjustment Quantity</apex:facet>
+                        <apex:inputText value="{!relatedTXNs.adjustment_quantity}" id="taxesQtyID" onkeyup="calculateAdjustmentTxn(this)" onmouseup="calculateAdjustmentTxn(this)"></apex:inputText>
+                    </apex:column>
+                    <apex:column >
+                        <apex:facet name="header">Adjustment Amount</apex:facet>
+                        <apex:outputText value="{!relatedTXNs.adjustment_amount}" id="taxesAdjustmentAmountID"></apex:outputText>
+                    </apex:column>
+                    
+                  </apex:pageblockTable>
+            </apex:pageBlockSection>                
+        </apex:outputPanel>
+        <apex:outputPanel styleClass="red">
+			<apex:pageBlockSection collapsible="false" title="Total Adjustment Amount" columns="2">
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Total Adjustments :"  />
+                    <apex:outputPanel layout="block">
+                         <apex:outputText value="{!totalAdjustments}" id="totalAdjustments" />                        	 
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+            </apex:pageBlockSection>                
+        </apex:outputPanel>
+        <apex:outputPanel styleClass="red" rendered="{!EditPg1}" >  
+            <apex:pageBlockSection collapsible="false" title="Adjustments Details" columns="1">
+                <apex:pageblockTable value="{!allAdjustments}" var="wrapRec">
+                <apex:column value="{!wrapRec.Name}" >
+                        <apex:facet name="header">Name</apex:facet>
+                </apex:column>
+                <apex:column value="{!wrapRec.Reason}" >
+                    <apex:facet name="header">Adjustment To</apex:facet>
+                </apex:column>
+                <apex:column value="{!wrapRec.Dt}">
+                    <apex:facet name="header">Date</apex:facet>
+                </apex:column>
+                <apex:column value="-{!wrapRec.Amount}">
+                    <apex:facet name="header">Amount ($)</apex:facet>
+                    
+                </apex:column>
+               
+              </apex:pageblockTable>
+        </apex:pageBlockSection>
+            
+        </apex:outputPanel>
+       
+            <apex:actionFunction name="paraFunction"  status="loading" action="{!save}" rerender="msgs1,errmsgs">      
+                <apex:param id="anode" name="node" value="" />
+                <apex:param name="nickName" value="" assignTo="{!nickName}"/>
+            </apex:actionFunction> 
+            <apex:pageBlock >
+                <div align="center">
+                    <apex:commandButton value="Save and Exit" onclick="doSave1();return false;"  status="loading"  style=" width: 203px;height: 30px; color:white;background:#1797c0;" />
+                </div>
+            </apex:pageBlock>
+    
+            </apex:outputPanel>     
+         </apex:form>
+    </apex:pageBlock>                         
+            
+    <script>  
+    $('[id$=summary]').hide();
+    $('[id$=JOURNALtABLE]').hide();
+    var pg = '{!DetailPage}';
+    if (pg === 'true') {
+        //alert('i am at TOP');
+     $("[id$=reFundButton]").show();
+     $("[id$=ChargeType]").prop("disabled", true);
+        //alert('After Type');
+     $("[id$=ChargeSubType]").prop("disabled", true);
+        //  alert('After Subtype');
+     $("[id$=chargeAmount]").prop("disabled", true);
+     $("[id$=DateFromDB]").prop("disabled", true);
+ }
+ function calculateAdjustment() {
+    var chargeQuantity = $('[id$=QtyID]').html();
+    var chargeAmount = $('[id$=AmountID]').html();
+    var fieldAmount = $('[id$=ChargeAmountID]').val();
+    var TaxApplyOnServiceCharge = $('[id$=TaxApplyOnServiceCharge]').val(); 
+    var taxes_on_service_charge = $('[id$=taxes_on_service_charge]').val(); 
+    var Adjqty = $('[id$=adjQtyID]').val();
+    var underChargeQty = true;
+    
+    $('[id*=taxesQtyID]').each(function(i, el) {
+                console.log(Math.abs($(this).val()));
+                underChargeQty = Adjqty <= (chargeQuantity - Math.abs($(this).val()));
+                return underChargeQty;
+    });
+
+
+     if (Math.abs(Adjqty) > parseInt(chargeQuantity) || underChargeQty == false) {
+         alert('Please enter an adjustment quantity that does not exceed the charge quantity');
+     } else {
+         console.log('chargeqty: ' + parseInt(chargeQuantity) + ' ' + 'chargeamt: ' + Number(chargeAmount.replace(/[^0-9\.-]+/g,"")));
+        var unitPrice = Number(chargeAmount.replace(/[^0-9\.-]+/g,"")) / parseInt(chargeQuantity);
+         console.log(unitPrice + ' ' + Math.abs(Adjqty));
+         
+        var temp_finalAdjAmount = (Math.abs(Adjqty)) * unitPrice;
+        var finalAdjAmount = -Math.abs(temp_finalAdjAmount);
+        
+         if (!isNaN(finalAdjAmount)) {
+             var totalAdjAmount = 0.00
+            $('[id$=adj_amount]').html(finalAdjAmount.toFixed(2));
+            $('[id$=adj_amount]').val(finalAdjAmount.toFixed(2));
+            $('[id*=taxesAdjustmentAmountID]').each(function(i, el) {
+                console.log(Math.abs($(this).val()));
+                totalAdjAmount += Math.abs($(this).val());
+            });
+            totalAdjAmount += Math.abs(finalAdjAmount);
+            
+            $('[id$=totalAdjustments]').html(-Math.abs(totalAdjAmount).toFixed(2));
+            $('[id$=totalAdjustments]').val(-Math.abs(totalAdjAmount).toFixed(2));
+         } else {
+             $('[id$=totalAdjustments]').val('0.00');
+         }
+     }
+     
+ }
+ function calculateAdjustmentTxn(button) {
+     console.log(button);
+     var taxesAmountID = button.id.replace("taxesQtyID", "taxesAmountID");
+     var taxesQtyID = button.id;
+     var taxesAdjustmentAmountID = button.id.replace("taxesQtyID", "taxesAdjustmentAmountID");
+     
+     var taxesAmount = $(document.getElementById(taxesAmountID)).text();
+     var taxesQty = $(document.getElementById(taxesQtyID)).val();
+     console.log(taxesQty);
+     var chargeQuantity = $('[id$=QtyID]').html();
+     var Adjqty = $('[id$=adjQtyID]').val();
+     var taxesAdjustmentAmount = $(document.getElementById(taxesAdjustmentAmountID)).text();
+     
+     if (Math.abs(taxesQty) > (parseInt(chargeQuantity) - Adjqty) || Math.abs(Adjqty) > (parseInt(chargeQuantity) - taxesQty)) {
+         alert('Please enter an adjustment quantity that does not exceed the charge quantity');
+     } else {
+         //var unitPrice = Number(taxesAmount.replace(/[^0-9\.-]+/g,"")) / parseInt(taxesQty);
+         var unitPrice = Number(taxesAmount.replace(/[^0-9\.-]+/g,"")) / parseInt(chargeQuantity);
+         console.log('numer: ' + Number(taxesAmount.replace(/[^0-9\.-]+/g,"")) + ' ' + unitPrice);
+         
+         var temp_finalAdjAmount = (Math.abs(taxesQty)) * unitPrice;
+         var finalAdjAmount = -Math.abs(temp_finalAdjAmount);
+         
+         console.log('Math.abs ' + Math.abs(taxesQty) + ' ' + temp_finalAdjAmount + ' ' + finalAdjAmount);
+         
+         if (!isNaN(finalAdjAmount)) {
+             $(document.getElementById(taxesAdjustmentAmountID)).val(finalAdjAmount.toFixed(2));
+             $(document.getElementById(taxesAdjustmentAmountID)).html(finalAdjAmount.toFixed(2));
+             
+             var totalAdjAmount = 0.00
+             $('[id*=taxesAdjustmentAmountID]').each(function(i, el) {
+                 console.log(Math.abs($(this).val()));
+                 totalAdjAmount += Math.abs($(this).val());
+             });
+             totalAdjAmount += Math.abs($('[id$=adj_amount]').val());
+             
+             $('[id$=totalAdjustments]').html(-Math.abs(totalAdjAmount).toFixed(2));
+             $('[id$=totalAdjustments]').val(-Math.abs(totalAdjAmount).toFixed(2));
+         } else {
+             $(document.getElementById(taxesAdjustmentAmountID)).html('0.00');
+         }
+     }
+ }
+ function calculateTax() {
+    var fieldAmount = $('[id$=ChargeAmountID]').val();
+    var TaxApplyOnServiceCharge = $('[id$=TaxApplyOnServiceCharge]').val(); 
+    var taxes_on_service_charge = $('[id$=taxes_on_service_charge]').val(); 
+    var qty = $('[id$=QtyID]').val();
+
+     var taxArray = [];
+
+     if(taxes_on_service_charge && taxes_on_service_charge !== '')
+        taxArray = taxes_on_service_charge.split(",");
+
+     var table = $("#taxTable tbody");
+     var chargeAmount1 = fieldAmount * qty;
+     var FianlTotal = 0.00;
+     var originalAmount = chargeAmount1;
+     if (chargeAmount1 == '') {
+         chargeAmount1 = 0.00;
+     }
+     FianlTotal = chargeAmount1;
+     var service_charge = $('[id$=ServiceCharge_amt]').html();
+     
+     if (service_charge !== '' && typeof service_charge != 'undefined') {
+        
+         serviceChargeAmt = (chargeAmount1 * service_charge / 100).toFixed(2);
+      
+         if (TaxApplyOnServiceCharge === 'false') {           
+             FianlTotal = parseFloat(parseFloat(serviceChargeAmt) + parseFloat(chargeAmount1)).toFixed(2);
+             $("#Service_charge_amt").html(serviceChargeAmt);
+             $("#amount_With_serviceCharge").html(FianlTotal);
+         } else {          
+             chargeAmount1 = parseFloat(parseFloat(serviceChargeAmt) + parseFloat(chargeAmount1)).toFixed(2);
+             FianlTotal = chargeAmount1;
+             $("#Service_charge_amt").html(serviceChargeAmt);
+             $("#amount_With_serviceCharge").html(chargeAmount1);
+         }
+
+     }
+  
+     var local = 0;
+     var totRow = 0;
+     table.find('tr').each(function(i) {
+         totRow++;       
+         if ($(this).find('input[type="checkbox"]').is(':checked') === false) {
+             var $tds = $(this).find('td'),
+             percatage = $tds.eq(1).text();
+          
+             var i = 1;
+             var tax = $tds.eq(0).text();
+             var check = 0;
+             
+             for(i=1;i<taxArray.length;i++){
+                
+                 if(tax == taxArray[i])
+                 {
+                    check = 1;
+                 }
+             }
+             if(check != 1)
+                 {
+                     amount = (originalAmount*percatage)/100;
+                 }
+             else{
+                 amount = chargeAmount1 * percatage / 100;
+                 }
+             check = 0;
+             FianlTotal = parseFloat(parseFloat(FianlTotal) + parseFloat(amount.toFixed(2)));
+             if (local < FianlTotal) {
+                 local = FianlTotal;
+             }
+             $tds.eq(2).text(amount.toFixed(2));
+         }
+     });  
+     $("#FinalTotal").html(local.toFixed(2));
+ }
+
+ function submitCharge() {
+     doSubmitCharge();
+ }
+ var allChargesJson = [];
+
+ function select_Charge(cb, idstatus) {  
+     var exampt = '{!Tax_exempt}';
+     if (exampt === 'false') {
+         alert('Oops. Sorry you do not have tax exempt permission.');
+         $(cb).prop("checked", false);
+         return false;
+     }
+
+     var charge = {};
+     charge.TaxName = $(cb).closest('tr').find('td:eq(0)').text();
+
+     if (cb.checked == true) {
+         $('.ExemptNumber').show();
+         charge.Amount = $(cb).closest('tr').find('td:eq(2)').text();
+         $(cb).closest('tr').find('td:eq(2)').text('0.00');
+         allChargesJson.push(charge);
+         var FT = $("#FinalTotal").html();
+         var newFT = parseFloat(FT) - parseFloat(charge.Amount);
+         $("#FinalTotal").html(newFT.toFixed(2));
+     } else {
+
+         for (var i = 0; i < allChargesJson.length; i++) {           
+             if (allChargesJson[i].TaxName == charge.TaxName) {               
+                 $(cb).closest('tr').find('td:eq(2)').text(allChargesJson[i].Amount);
+                 var FT = $("#FinalTotal").html();
+                 var newFT = parseFloat(FT) + parseFloat(allChargesJson[i].Amount);
+                 $("#FinalTotal").html(newFT.toFixed(2));
+
+                 allChargesJson.splice(i, 1);
+             }
+         }
+         if (allChargesJson.length === 0) {
+             $('.ExemptNumber').hide();
+         }
+     }
+ }
+
+ function doSave(node) {
+     var exampt = '{!Tax_exempt}';
+     if (exampt !== 'false') {
+         var exempt_number_db = '{!HTMLENCODE(tax_exempt_number)}';
+         var exempt_number_page = $("[id$=exemptNumber]").val();
+         if (exempt_number_page === '' && allChargesJson.length > 0) {
+             alert('Please, Enter Tax Exempt Number.');
+             return false;
+         }
+         if (exempt_number_db !== exempt_number_page && allChargesJson.length > 0) {
+             alert('Oops. Exempt number didnt match.');
+             return false;
+         }
+     }
+     var arr = {
+         "data": allChargesJson
+     };
+     paraFunction(JSON.stringify(arr), 'saveNew');
+ }
+
+ function doSave1(node) {
+     var exampt = '{!Tax_exempt}';
+     if (exampt !== 'false') {
+         var exempt_number_db = '{!HTMLENCODE(tax_exempt_number)}';
+         var exempt_number_page = $("[id$=exemptNumber]").val();
+         if (exempt_number_page === '' && allChargesJson.length > 0) {
+             alert('Please, Enter Tax Exempt Number.');
+             return false;
+         }
+         if (exempt_number_db !== exempt_number_page && allChargesJson.length > 0) {
+             alert('Oops. Exempt number didnt match.');
+             return false;
+         }
+     }
+     var arr = {
+         "data": allChargesJson
+     };
+     paraFunction(JSON.stringify(arr), 'save');
+ }
+    /* Guest Button*/
+     function doSave1(node) {
+     var exampt = '{!Tax_exempt}';
+     if (exampt !== 'false') {
+         var exempt_number_db = '{!HTMLENCODE(tax_exempt_number)}';
+         var exempt_number_page = $("[id$=exemptNumber]").val();
+         if (exempt_number_page === '' && allChargesJson.length > 0) {
+             alert('Please, Enter Tax Exempt Number.');
+             return false;
+         }
+         if (exempt_number_db !== exempt_number_page && allChargesJson.length > 0) {
+             alert('Oops. Exempt number didnt match.');
+             return false;
+         }
+     }     
+     var arr = {
+         "data": allChargesJson
+     };
+     paraFunction(JSON.stringify(arr), 'save');
+    }  
+  
+    if({!DetailPage}){          
+        $('[id$=reservation]').attr('disabled','disabled');
+        $('[id$=folio]').attr('disabled','disabled');   
+    }
+   
+
+ </script>
+</apex:page>

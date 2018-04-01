@@ -1,0 +1,78 @@
+<apex:page controller="TxnAllTaxesController" standardStylesheets="false" >
+    
+    <head>
+        <apex:includescript value="{!URLFOR($Resource.jqueryDatatable_3embed,'/3embed/jquery-1.11.1.min.js')}" />
+        <apex:includescript value="{!URLFOR($Resource.jqueryDatatable_3embed,'/3embed/jquery.dataTables.min.js')}" />
+        <apex:stylesheet value="{!URLFOR($Resource.jqueryDatatable_3embed,'/3embed/jquery.dataTables.min.css')}" />
+        <script>       
+        $(document).ready( function () {                            
+            $("#contacttable").DataTable({
+                columnDefs: [
+                    { width: '20%', targets: 0 }
+                ]
+            });
+        });
+        </script>
+    </head>
+    
+    <style>
+        body .bPageBlock .pbBody .red .pbSubheader{
+        background-color:#6666FF;
+        }      
+        
+     .hoverTable{
+        width:100%; 
+        border-collapse:collapse; 
+        }
+    .hoverTable tr:hover {
+          background-color:#9fbfdf;
+    }
+   
+    </style>
+    
+    <apex:pageBlock >
+        <b>Tax Mapping</b>  
+    </apex:pageBlock>
+    <apex:form id="paymentForm">
+    <apex:pageBlock id="msgs">
+        <apex:pageMessages rendered="true" ></apex:pageMessages>
+        <apex:commandbutton value="New Mapping" action="{!redirectUser}"/>
+    </apex:pageBlock>
+    
+        <apex:pageBlock id="refreshTable">
+            <table id="contacttable" style="width:100%; padding-top:20px;" class="hoverTable">
+                <thead>
+                    <tr>
+                        <th>Type</th>
+                        <th>Sub<br/>Type</th>
+                        <th>Applicable Taxes</th>
+                        <th>Service<br/>Charge<br/>Applicable</th>
+                        <th>Service<br/>Charge<br/>Amount<br/></th>
+                        <th>Taxes On<br/>Service<br/>Charge<br/>Applicable</th>
+                        <th>Options</th>
+                        
+                    </tr>
+                </thead>
+                <tbody>
+                    <apex:repeat value="{!allCharges}" var="allC">
+                        <tr id="{!allC.Name}">
+                            <td>{!allC.Type}</td>
+                            <td>{!allC.SubType}</td>
+                            <td>
+                                <apex:selectList size="1" >                
+                                    <apex:selectOptions value="{!allC.Taxes}" />
+                                    
+                                </apex:selectList>
+                            </td>
+                            <td> <apex:inputCheckbox value="{!allC.SCApplicable}" disabled="true" /></td>
+                            <td>{!allC.SC}</td>
+                            <td><apex:inputCheckbox value="{!allC.TaxOnSErviceCharge}" disabled="true" /></td>
+                            <td><a href="/apex/TxnChargesToTaxMapping?charge={!allC.ChargeId}&type={!allC.Type}&subtype={!allC.SubType}" style="cursor:pointer;" target='_new'>Edit</a>
+                            </td>
+                        </tr>
+                    </apex:repeat>
+                </tbody>
+            </table>
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>

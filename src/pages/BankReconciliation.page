@@ -1,0 +1,413 @@
+<apex:page showHeader="true" sidebar="false" standardController="Bank_Statement__c" extensions="BankReconciliationController">
+    <!-- Scripts -->
+    <apex:includeScript value="{!URLFOR($Resource.jQuery_UI,'/jquery-ui-1.10.3.custom/js/jquery-3.2.1.min.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.jQuery_UI,'/jquery-ui-1.10.3.custom/js/jquery-ui-1.10.3.custom.min.js')}"/>
+
+    <apex:includeScript value="{!URLFOR($Resource.jQuery_UI,'/jquery-ui-1.10.3.custom/js/jquery.dataTables.js')}"/>   
+    <!-- Stylings -->
+    <apex:stylesheet value="{!URLFOR($Resource.jQuery_UI, '/jquery-ui-1.10.3.custom/css/ui-lightness/jquery-ui-1.10.3.custom.min.css')}"/> 
+    <apex:stylesheet value="{!URLFOR($Resource.jQuery_UI, '/jquery-ui-1.10.3.custom/css/jquery.dataTables.css')}"/>   
+
+    <script>
+        //Global JS vars
+        var j$ = jQuery.noConflict();       
+        function toggleSelCheckAll(checked){
+            j$('[id*=CHECKSEL]:enabled').each(function(i,obj){
+                obj.checked = checked;
+            });
+            AddDeductAF();
+            return false;
+        }
+        function toggleSelOtherAll(checked){
+            j$('[id*=OTHERSEL]:enabled').each(function(i,obj){
+                obj.checked = checked;
+            });
+            AddDeductAF();
+            return false;
+        }
+    </script>
+    <apex:form id="theForm">
+
+        <!--Working status-->
+        <apex:actionStatus id="WORKING" >
+            <apex:facet name="start">
+                <div class="waitingSearchDiv" style="background-color: #000;
+                       height: 100%;filter: alpha(opacity=50);opacity:0.5;width:100%;"> 
+                </div>
+                <div class="waitingSearchDiv" style="z-index:999;width:100%"> 
+                    <div class="waitingHolder" style="z-index:999;top: 175px; left: 20px; width: 200px;height: 25px;background-color: #fff;border: 1px solid black;border-radius: 5px;padding-top: 10px;color: #000;">
+                        <span class="waitingDescription" style="color:#000;">Working...</span>
+                        <img class="waitingImage" src="/img/loading.gif" title="Please Wait..." />
+                    </div>
+                </div> 
+            </apex:facet>
+        </apex:actionstatus>
+
+        <!--Page level messages -->
+        <apex:outputPanel id="MESSAGES">
+            <apex:pageMessages ></apex:pageMessages>
+        </apex:outputPanel>
+
+        <!--Bank reconcilation search for existing bank statement and create new bank statement section-->
+        <apex:pageBlock id="BANKSECTION" title="Bank Reconciliation">
+            
+
+            <!--Financial account and statement selection-->
+            <apex:pageBlockSection id="FASELECTION">
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Bank Financial Account"></apex:outputLabel>
+                    <apex:selectList size="1" value="{!selectedFA}" disabled="{!workingBankRec==true}">
+                        <apex:selectOptions value="{!FASOs}"></apex:selectOptions>
+                        <apex:actionSupport event="onchange" reRender="theForm" status="WORKING"></apex:actionSupport>
+                    </apex:selectList>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Bank Statement"></apex:outputLabel>
+                    <apex:selectList size="1" value="{!selectedBST}" disabled="{!BSSOs.size==0 || workingBankRec==true}">
+                        <apex:selectOptions value="{!BSSOs}"></apex:selectOptions>
+                    </apex:selectList>
+                </apex:pageBlockSectionItem>
+                <apex:outputPanel >
+                <apex:commandButton value="Next" action="{!searchStatement}" reRender="theForm" disabled="{!selectedFA=='' || workingBankRec==true}"></apex:commandButton>
+                <apex:commandButton value="Change Financial Account/Statement" action="{!changeFAStat}" reRender="theForm" rendered="{!workingBankRec==true}"></apex:commandButton>
+                </apex:outputPanel>
+            </apex:pageBlockSection>
+
+
+            <!--Create new or edit existing bank statement section-->
+            <apex:outputPanel id="STATEMENTDETAILS">
+                <apex:pageBlockSection title="Balance per Bank Statement" rendered="{!bankStat!=null}" id="bankStatSection">
+                    <apex:inputField label="Statement Date" value="{!bankStat.Date__c}" rendered="{!workingBankStat==false}">
+                        <apex:actionSupport event="onchange" reRender="SEARCHTRANSBUTTON"></apex:actionSupport>
+                    </apex:inputField>
+                    <apex:outputField label="Statement Date" value="{!bankStat.Date__c}" rendered="{!workingBankStat==true}"></apex:outputField>
+                    <apex:inputField value="{!bankStat.Statement_Balance__c}" rendered="{!workingBankStat==false}">
+                        <apex:actionSupport event="onchange" reRender="SEARCHTRANSBUTTON"></apex:actionSupport>
+                    </apex:inputField>
+                    <apex:outputField value="{!bankStat.Statement_Balance__c}" rendered="{!workingBankStat==true}"></apex:outputField>  
+
+                    <apex:outputLabel rendered="{!workingBankStat==true}">&nbsp;</apex:outputLabel>                                          
+                    <apex:pageBlockSectionItem rendered="{!workingBankStat==true}">
+                        <apex:outputLabel value="Bank Rec Variance" ></apex:outputLabel>
+                        <apex:outputText value="${!((DeductTotal*-1)+AddTotal+bankStat.GL_Balance__c)-((bsDeductTotal*-1)+(checkedOffChecksBal*-1)+bsAddTotal+bankStat.Statement_Balance__c)}"></apex:outputText>
+                    </apex:pageBlockSectionItem>
+
+                     <apex:outputPanel id="SEARCHTRANSBUTTON">
+                        <apex:commandButton value="Save Statement" disabled="{!bankStat.Date__c==null || fjwList.size>0 || bankStat.Statement_Balance__c==null}" action="{!saveStatement}" reRender="theForm"></apex:commandButton>
+                        <apex:commandButton value="Search Transactions" disabled="{!bankStat.Date__c==null || fjwList.size>0 || bankStat.Statement_Balance__c==null}" action="{!searchTransactions}" status="WORKING" reRender="theForm"></apex:commandButton>
+
+                          <apex:commandButton value="Change Statement" rendered="{!workingBankStat==true}" action="{!changeStatement}" reRender="theForm">
+                        </apex:commandButton>                        
+                    </apex:outputPanel>           
+                    
+                </apex:pageBlockSection>
+                <apex:pageBlockSection title="Transactions" columns="1" rendered="{!fjwList.size>0 || vicList.size>0}">
+                    <apex:commandButton value="Save" action="{!save}" status="WORKING" reRender="theForm"></apex:commandButton>
+                    <apex:pageBlockSection columns="2">
+                        <apex:pageBlockSection title="Checks" columns="1">
+                            <apex:pageBlockTable styleClass="brChecksTable" value="{!vicList}" var="fjw">
+                                <apex:column >
+                                    <apex:facet name="header">
+                                        <input type="checkbox" onclick="toggleSelCheckAll(this.checked);"/>
+                                    </apex:facet>
+                                    <apex:panelGroup >
+                                        <apex:inputCheckbox id="CHECKSEL" value="{!fjw.selected}"  onchange="AddDeductAF();" disabled="{!fjw.disabled}"/>
+                                    </apex:panelGroup>
+                                </apex:column>
+                                <apex:column headerValue="Vendor">
+                                    <apex:outputLink value="/{!fjw.vic.Vendor__c}" target="_blank">{!fjw.vic.Vendor__r.Name}</apex:outputLink>
+                                </apex:column>
+                                <apex:column headerValue="Check Date">
+                                    <apex:outputField value="{!fjw.vic.Check_Date__c}"></apex:outputField>
+                                </apex:column>
+                                <apex:column headerValue="Check Number">
+                                    <apex:outputLink value="/{!fjw.vic.Id}" target="_blank">{!fjw.vic.Check_Number__c}</apex:outputLink>
+                                </apex:column>
+                                <apex:column style="text-align:right">
+                                    <apex:facet name="header">
+                                        <apex:outputPanel layout="block" style="text-align:right">
+                                            Credit
+                                        </apex:outputPanel>
+                                    </apex:facet>
+                                    <apex:outputField value="{!fjw.vic.Amount__c}"></apex:outputField>
+                                    <apex:facet name="footer">
+                                         <apex:outputPanel layout="block" style="text-align:right">
+                                            <apex:outputText value="Total Credit: ${0, number, ###,###,##0.00}">
+                                                <apex:param value="{!FJCreditCheckTotal}" />
+                                            </apex:outputText>
+                                         </apex:outputPanel>
+                                    </apex:facet>
+                                </apex:column>
+                            </apex:pageBlockTable>
+                            <script>
+                                j$('table.brChecksTable').dataTable({
+                                    sPaginationType: 'full_numbers',
+                                    'aLengthMenu':[[100,500,1000,-1],[100,500,1000,'All']],
+                                    'iDisplayLength':-1
+                                });
+                            </script>
+                        </apex:pageBlockSection>
+                        <apex:pageBlockSection title="Others" columns="1">
+                            <apex:pageBlockTable styleClass="brOthersTable" value="{!fjwList}" var="fjw">
+                                <apex:column >
+                                    <apex:facet name="header">
+                                        <input type="checkbox" onclick="toggleSelOtherAll(this.checked);"/>
+                                    </apex:facet>
+                                    <apex:panelGroup >
+                                        <apex:inputCheckbox id="OTHERSEL" value="{!fjw.selected}" onchange="AddDeductAF();" disabled="{!fjw.disabled}"/>
+                                    </apex:panelGroup>
+                                </apex:column>
+                                <apex:column headerValue="Financial Journal">
+                                    <apex:outputLink value="/{!fjw.fj.id}" target="_blank">{!fjw.fj.Name}</apex:outputLink>
+                                </apex:column>
+                                <apex:column headerValue="Book Date">
+                                    <apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                                        <apex:param value="{!fjw.fj.Transaction_Date__c}"/> 
+                                    </apex:outputText>
+                                    <!--<apex:outputField value="{!fjw.fj.Transaction_Date__c}"></apex:outputField>-->
+                                </apex:column>
+                                <apex:column headerValue="Post Date">
+                                    <apex:outputField value="{!fjw.fj.Post_Date__c}"></apex:outputField>
+                                </apex:column>
+                                <apex:column headerValue="Description">
+                                    <apex:outputField value="{!fjw.fj.Description__c}"></apex:outputField>
+                                </apex:column>
+                                <apex:column style="text-align:right">
+                                    <apex:facet name="header">
+                                        <apex:outputPanel layout="block" style="text-align:right">
+                                            Debit
+                                        </apex:outputPanel>
+                                    </apex:facet>
+                                    <apex:outputText value="${0, number, ###,###,##0.00}">
+                                        <apex:param value="{!fjw.debit}"/>
+                                    </apex:outputText>
+                                    <apex:facet name="footer">
+                                        <apex:outputPanel layout="block" style="text-align:right">
+                                            <apex:outputText value="Total Debit: ${0, number, ###,###,##0.00}">
+                                                <apex:param value="{!FJDebitTotal}" />
+                                            </apex:outputText>
+                                        </apex:outputPanel>
+                                    </apex:facet>
+                                </apex:column>
+                                <apex:column style="text-align:right">
+                                    <apex:facet name="header">
+                                        <apex:outputPanel layout="block" style="text-align:right">
+                                            Credit
+                                        </apex:outputPanel>
+                                    </apex:facet>
+                                    <apex:outputText value="${0, number, ###,###,##0.00}">
+                                        <apex:param value="{!fjw.crdAmount}"/>
+                                    </apex:outputText>
+                                    <apex:facet name="footer">
+                                        <apex:outputPanel layout="block" style="text-align:right">
+                                            <apex:outputText value="Total Credit: ${0, number, ###,###,##0.00}">
+                                                <apex:param value="{!FJCreditTotal}" />
+                                            </apex:outputText>
+                                        </apex:outputPanel>
+                                    </apex:facet>
+                                </apex:column>
+                            </apex:pageBlockTable>
+                            <script>
+                                j$('table.brOthersTable').dataTable({
+                                    sPaginationType: 'full_numbers',
+                                    'aLengthMenu':[[100,500,1000,-1],[100,500,1000,'All']],
+                                    'iDisplayLength':-1
+                                });
+                            </script>
+                        </apex:pageBlockSection>
+                    </apex:pageBlockSection>
+                    <apex:actionFunction name="AddDeductAF" action="{!addDeduct}" reRender="bankStatSection,TOTALBANKRECAMOUNT"></apex:actionFunction>
+                </apex:pageBlockSection>
+
+                <!--Adjustments to Bank Balance-->
+                <apex:pageBlockSection columns="1" title="Adjustments to Bank Balance" rendered="{!workingBankStat==true && workingAddDeduct==true}">
+                    <apex:pageBlockSection columns="1" title="Add">
+                        <apex:pageBlockTable value="{!fjwListBSAdd}" var="fjw" rendered="{!fjwListBSAdd.size>0}">
+                            <apex:column headerValue="Financial Journal">
+                                <apex:outputLink value="/{!fjw.fj.id}">{!fjw.fj.Name}</apex:outputLink>
+                            </apex:column>
+                            <apex:column headerValue="Book Date">
+                                <apex:outputField value="{!fjw.fj.Transaction_Date__c}"></apex:outputField>
+                            </apex:column>
+                            <apex:column headerValue="Post Date">
+                                <apex:outputField value="{!fjw.fj.Post_Date__c}"></apex:outputField>
+                            </apex:column>
+                            <apex:column headerValue="Description">
+                                <apex:outputField value="{!fjw.fj.Description__c}"></apex:outputField>
+                            </apex:column>
+                            <apex:column headerValue="Amount">
+                                <apex:outputField value="{!fjw.fj.Amount__c}"></apex:outputField>
+                                <apex:facet name="footer">
+                                     <apex:outputText value="Total Add:${0, number, ###,###,##0.00}">
+                                                <apex:param value="{!bsAddTotal}" />
+                                     </apex:outputText>                            
+                                </apex:facet>
+                            </apex:column>
+                        </apex:pageBlockTable>
+                    </apex:pageBlockSection>
+                    <apex:pageBlockSection columns="1" title="Deduct">
+                        <apex:pageBlockTable value="{!fjwListBSDeduct}" var="fjw" rendered="{!fjwListBSDeduct.size>0}">
+                            <apex:column headerValue="Financial Journal">
+                                <apex:outputLink value="{!fjw.fj.id}">{!fjw.fj.Name}</apex:outputLink>
+                            </apex:column>
+                            <apex:column headerValue="Book Date">
+                                <apex:outputField value="{!fjw.fj.Transaction_Date__c}"></apex:outputField>
+                            </apex:column>
+                            <apex:column headerValue="Post Date">
+                                <apex:outputField value="{!fjw.fj.Post_Date__c}"></apex:outputField>
+                            </apex:column>
+                            <apex:column headerValue="Description">
+                                <apex:outputField value="{!fjw.fj.Description__c}"></apex:outputField>
+                            </apex:column>
+                            <apex:column headerValue="Amount">
+                                <apex:outputField value="{!fjw.fj.Amount__c}"></apex:outputField>
+                                <apex:facet name="footer">
+                                <apex:outputText value="Total Deduct:${0, number, ###,###,##0.00}">
+                                        <apex:param value="{!bsDeductTotal}" />
+                                </apex:outputText>                                   
+                                </apex:facet>
+                            </apex:column>
+                        </apex:pageBlockTable>
+                    </apex:pageBlockSection>
+                    </apex:pageBlockSection>
+                    <apex:pageBlockSection columns="2" rendered="{!workingBankStat==true && workingAddDeduct==true}">
+                    <apex:pageBlockSectionItem />
+                    <apex:pageBlockSectionItem > 
+                    <apex:outputPanel styleClass="float:right">                     
+                        <apex:outputText value="Outstanding Checks:${0, number, ###,###,##0.00}">
+                                        <apex:param value="{!checkedOffChecksBal}" />
+                        </apex:outputText>  
+                        </apex:outputPanel>                          
+                    </apex:pageBlockSectionItem>                    
+                </apex:pageBlockSection>
+
+                <!--Balance per GL section start here-->
+                <apex:pageBlockSection columns="1" id="BALANCEPERGL" title="Balance per G/L" rendered="{!workingBankStat==true}">                                   
+                    <apex:pageMessages ></apex:pageMessages>
+                    <apex:outputField label="G/L Balance" value="{!bankStat.GL_Balance__c}"></apex:outputField>
+                    <apex:outputPanel >
+                    <apex:commandButton value="Post Bank Rec Journal Lines" action="{!postBRJL}" rendered="{!(AddManList.size>0||DeductManList.size>0)}" status="WORKING" reRender="theForm"></apex:commandButton>
+
+                    <apex:commandButton value="Save" action="{!save}" status="WORKING" reRender="theForm"></apex:commandButton>
+                    </apex:outputPanel>
+
+                    <!--Add cash section start-->
+                    <apex:pageBlockSection columns="1" title="Add-Debit Cash">
+                        <apex:pageBlockTable value="{!AddManList}" var="me" rendered="{!AddManList.size>0}">
+                            <apex:column style="visibility:hidden;">{!me.index}</apex:column>
+                            <apex:column headerValue="Add/Del">
+                                <apex:commandLink action="{!addManAddEntry}" value="Add" rerender="theForm">
+                                </apex:commandLink> | <apex:commandLink action="{!remManAddEntry}" value="Del" rerender="theForm" rendered="{!AddManList.size>1 && me.fj.Posted__c==false}">
+                                    <apex:param value="{!me.index}" name="p1" assignTo="{!addRemIndex}"/>
+                                </apex:commandLink><apex:outputPanel rendered="{!AddManList.size==1}">Del</apex:outputPanel>
+                            </apex:column>
+                            <apex:column headerValue="Financial Journal">
+                                <apex:outputLink value="/{!me.fj.id}">{!me.fj.Name}</apex:outputLink>
+                            </apex:column>
+
+                            <apex:column headerValue="Financial Account">
+                                <apex:panelGroup styleClass="searchMember" rendered="{!me.fj.Posted__c==false}">
+                                    <apex:inputField value="{!me.fj.Financial_Account__c}"/>                               
+                                </apex:panelGroup>
+
+                                <apex:outputField value="{!me.fj.Financial_Account__c}" rendered="{!me.fj.Posted__c==true}"></apex:outputField>                                
+                            </apex:column>
+
+                            <apex:column headerValue="Book Date">
+                                <apex:inputField value="{!me.fj.Transaction_Date__c}" rendered="{!me.fj.Posted__c==false}"/>
+                                <apex:outputField value="{!me.fj.Transaction_Date__c}" rendered="{!me.fj.Posted__c==true}"/>
+                            </apex:column>
+
+                            <apex:column headerValue="Description">
+                                <apex:inputField value="{!me.fj.Description__c}" rendered="{!me.fj.Posted__c==false}"/>
+                                <apex:outputField value="{!me.fj.Description__c}" rendered="{!me.fj.Posted__c==true}"/>
+                            </apex:column>
+
+                            <apex:column headerValue="Amount">
+                                <apex:inputField value="{!me.fj.Amount__c}" rendered="{!me.fj.Posted__c==false}">
+                                    <apex:actionSupport event="onchange" action="{!regenerateManualTotals}" reRender="TOTALBANKRECAMOUNT,BALANCEPERGL"></apex:actionSupport>
+                                </apex:inputField>
+                                <apex:outputField value="{!me.fj.Amount__c}" rendered="{!me.fj.Posted__c==true}"/>
+                                <apex:facet name="footer">
+                                <apex:outputText value="Total:${0, number, ###,###,##0.00}">
+                                    <apex:param value="{!addTotal}" />
+                                </apex:outputText>
+                                </apex:facet>      
+                            </apex:column>
+                        </apex:pageBlockTable>
+                    </apex:pageBlockSection>
+
+                    <!--Deduct cash section starts here-->                    
+                    <apex:pageBlockSection columns="1" title="Deduct-Credit Cash">
+                        <apex:pageBlockTable value="{!DeductManList}" var="me" rendered="{!DeductManList.size>0}">
+                            <apex:column style="visibility:hidden;">{!me.index}</apex:column>
+                            <apex:column headerValue="Add/Del">
+                                <apex:commandLink action="{!addManDeductEntry}" value="Add" rerender="theForm">
+                                </apex:commandLink> | <apex:commandLink action="{!remManDeductEntry}" value="Del" rerender="theForm" rendered="{!DeductManList.size>1 && me.fj.Posted__c==false}">
+                                    <apex:param value="{!me.index}" name="p1" assignTo="{!deductRemIndex}"/>
+                                </apex:commandLink><apex:outputPanel rendered="{!DeductManList.size==1}">Del</apex:outputPanel>
+                            </apex:column>
+                            <apex:column headerValue="Financial Journal">
+                                <apex:outputLink value="/{!me.fj.id}">{!me.fj.Name}</apex:outputLink>
+                            </apex:column>
+                            <apex:column headerValue="Financial Account">
+                                <apex:panelGroup styleClass="searchMember" rendered="{!me.fj.Posted__c==false}">
+                                    <apex:inputField value="{!me.fj.Financial_Account__c}"/>                                   
+                                </apex:panelGroup>
+                                <apex:outputField value="{!me.fj.Financial_Account__c}" rendered="{!me.fj.Posted__c==true}"></apex:outputField>
+                            </apex:column>
+                            <apex:column headerValue="Book Date">
+                                <apex:inputField value="{!me.fj.Transaction_Date__c}" rendered="{!me.fj.Posted__c==false}"/>
+                                <apex:outputField value="{!me.fj.Transaction_Date__c}" rendered="{!me.fj.Posted__c==true}"/>
+                            </apex:column>
+                            <apex:column headerValue="Description">
+                                <apex:inputField value="{!me.fj.Description__c}" rendered="{!me.fj.Posted__c==false}"/>
+                                <apex:outputField value="{!me.fj.Description__c}" rendered="{!me.fj.Posted__c==true}"/>
+                            </apex:column>
+                            <apex:column headerValue="Amount">
+                                <apex:inputText value="{!me.fj.Amount__c}" rendered="{!me.fj.Posted__c==false}">
+                                    <apex:actionSupport event="onchange" action="{!regenerateManualTotals}" reRender="TOTALBANKRECAMOUNT,BALANCEPERGL"></apex:actionSupport>
+                                </apex:inputText>
+                                <apex:outputField value="{!me.fj.Amount__c}" rendered="{!me.fj.Posted__c==true}"/>
+                                <apex:facet name="footer">
+                                <apex:outputText value="Total:${0, number, ###,###,##0.00}">
+                                    <apex:param value="{!deductTotal}" />
+                                </apex:outputText>
+                                </apex:facet>
+                            </apex:column>
+                        </apex:pageBlockTable>
+                        <apex:pageBlockSectionItem >
+                            <apex:outputPanel style="float: right;">
+                             <apex:outputText value="Adjusted G/L Balance:${0, number, ###,###,##0.00}">
+                                    <apex:param value="{!(DeductTotal*-1)+AddTotal+bankStat.GL_Balance__c}" />
+                                </apex:outputText>                       
+                            </apex:outputPanel>
+                        </apex:pageBlockSectionItem>
+                    </apex:pageBlockSection>
+                </apex:pageBlockSection>
+
+                <!--Total summary goes here-->
+                <apex:pageBlockSection columns="2" id="TOTALBANKRECAMOUNT" title="Bank Rec Summary" rendered="{!workingBankStat==true}">
+                    <apex:pageBlockSectionItem >
+                         <apex:outputText value="Adjusted Bank Balance: ${0, number, ###,###,##0.00}">
+                            <apex:param value="{!(bsDeductTotal*-1)+(checkedOffChecksBal*-1)+bsAddTotal+bankStat.Statement_Balance__c}" />
+                        </apex:outputText>                         
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem />
+                    <apex:pageBlockSectionItem >
+                         <apex:outputText value="Adjusted G/L Balance: ${0, number, ###,###,##0.00}">
+                            <apex:param value="{!(DeductTotal*-1)+AddTotal+bankStat.GL_Balance__c}" />
+                        </apex:outputText>                              
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem />
+                    <apex:pageBlockSectionItem >
+                         <apex:outputText value="Bank Rec Variance: ${0, number, ###,###,##0.00}">
+                            <apex:param value="{!((DeductTotal*-1)+AddTotal+bankStat.GL_Balance__c)-((bsDeductTotal*-1)+(checkedOffChecksBal*-1)+bsAddTotal+bankStat.Statement_Balance__c)}" />
+                        </apex:outputText>                             
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem />
+                </apex:pageBlockSection>
+            </apex:outputPanel>
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>

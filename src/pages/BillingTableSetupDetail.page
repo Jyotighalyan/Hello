@@ -1,0 +1,14 @@
+<apex:page showHeader="true" sidebar="true" standardController="Member_Dues__c" extensions="BillingTableSetupDetailController" action="{!setupPage}">
+	<apex:includescript value="{!URLFOR($Resource.jqueryDatatable_3embed,'/3embed/jquery-1.11.1.min.js')}" />
+
+	<script>
+	$(document).ready(function(){
+		if('{!isInstalSele}'=='true'){
+			alert('Important \nDistribute the annual amounts for this due.');
+			window.location = '{!redirectTo}';
+		}
+	})
+	</script>
+	
+	<apex:detail relatedList="true" inlineEdit="true" oncomplete="location.reload()"/>
+</apex:page>

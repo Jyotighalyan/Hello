@@ -1,0 +1,153 @@
+<apex:page showHeader="true" sidebar="true" controller="GenerateDuesController">
+<apex:includescript value="{!URLFOR($Resource.jqueryDatatable_3embed,'/3embed/jquery-1.11.1.min.js')}" />
+<apex:stylesheet value="{!URLFOR($Resource.foretees, '/ProgressBar/progressbar.css')}"/>
+<apex:stylesheet value="{!URLFOR($Resource.foretees, '/main.css')}"/>
+<apex:stylesheet value="{!URLFOR($Resource.fontawesome,'/css/font-awesome.css')}"/>
+<br/>
+<apex:outputLink id="link" styleClass="tooltip" value="/{!$Page.FinancialLandingPage}">Finnancial Landing Page </apex:outputLink>&nbsp; <i class="fa fa-angle-right" aria-hidden="true"></i>&nbsp; Generate Dues Setup
+<br/>
+<br/>
+<style>
+  .warningImg
+  {
+     height: 75%; 
+     position: relative;
+     display: inline-block;
+  }
+
+  .ttip
+  {
+    display: none;
+    width: 157px;
+    background-color: #ffffcc;
+    text-align: center;
+    border-radius: 10px;
+    padding: 5px 5px;
+    position: absolute;
+    z-index: 1;
+    top: -5px;
+    right: 73%;
+    color: #303030;
+  }
+</style>
+<script>
+  function cancelGenerate()
+  {
+    window.location = '{!JSENCODE(HTMLENCODE($Page.FinancialLandingPage))}'
+  }
+  $(document).ready(function(){
+      $( ".warningImg" ).hover(
+              function(){
+                  $( '.ttip' ).css({ 'display': "block" });
+               }, function(){
+                   $( '.ttip' ).css({ 'display': "none" });
+               }
+      );
+  });
+</script>
+<apex:actionStatus id="WORKING">
+      <apex:facet name="start">
+          <div class="waitingSearchDiv" style="background-color: #000;
+              height: 100%;filter: alpha(opacity=50);opacity:0.5;width:100%;">
+          </div>
+          <div class="waitingSearchDiv" style="z-index:999;width:100%">
+              <div class="waitingHolder" style="z-index:999;top: 175px; left: 20px; width: 200px;height: 25px;background-color: #fff;border: 1px solid black;border-radius: 5px;padding-top: 10px;color: #000;">
+                  <span class="waitingDescription" style="color:#000;">Working...</span>
+                  <img class="waitingImage" src="/img/loading.gif" title="Please Wait..." />
+              </div>
+          </div>
+      </apex:facet>
+</apex:actionStatus>
+<apex:pageBlock id="headerSection"> 
+<apex:pageMessages id="msgs"></apex:pageMessages>
+<br/>
+<script>
+  if ('{!JSENCODE(HTMLENCODE(status))}'=='confirm' && '{!JSENCODE(HTMLENCODE(confirmDues))}'!='') {
+    var msg = '';
+    if('{!JSENCODE(HTMLENCODE(confirmDues))}'.includes(',')){
+      msg = 'these dues are';
+    }
+    else
+    {
+      msg = 'the due is';
+    }
+    alert('Skipping {!JSENCODE(HTMLENCODE(confirmDues))} because '+msg+' already processed for this billing period.');
+    generateDues('generate');
+  }
+  else if('{!JSENCODE(HTMLENCODE(status))}'=='confirm')
+  {
+    generateDues('generate');
+  }
+</script>
+<apex:form >
+  <apex:actionFunction status="WORKING" name="generateDues" action="{!generateDues}" reRender="headerSection">
+    <apex:param name="status" value="" assignTo="{!status}"/>
+  </apex:actionFunction>
+  <!-- HACK: Fake pbSection to inject the twistSection JS function -->
+  <apex:pageBlockSection title="Test" showHeader="true" rendered="false">
+      <apex:pageBlockSectionItem >
+          <apex:outputText value="Label" />
+          <apex:outputText value="Value" />
+      </apex:pageBlockSectionItem>
+  </apex:pageBlockSection>
+  <apex:outputPanel styleClass="head">  
+  <apex:pageBlockSection title="Generate members due" columns="1">    
+      <br/><br/>
+            <apex:pageBlockSectionItem >
+                <apex:outputLabel >Post Date : </apex:outputLabel>
+                <apex:outputPanel >
+                  <div class="requiredInput" >
+                      <div class="requiredBlock"></div> 
+                      <apex:inputField value="{!txnObjRec.Post_Date__c}">
+                      <apex:actionSupport event="onchange" action="{!renderDues}" reRender="dues" status="WORKING"/>
+                      </apex:inputField> 
+                  </div>
+                </apex:outputPanel>                      
+            </apex:pageBlockSectionItem>
+    
+            <apex:pageBlockSectionItem >       
+                <apex:outputLabel >Billing Period : </apex:outputLabel>
+                <apex:outputPanel layout="block">
+                            <apex:selectList value="{!selectedBillingPeriod}" size="1" rendered="true">
+                                <apex:actionSupport event="onchange" action="{!renderDues}" reRender="dues" status="WORKING"/>
+                                <apex:selectOptions value="{!billingPeriod}"></apex:selectOptions>
+                            </apex:selectList> 
+                  </apex:outputPanel>
+            </apex:pageBlockSectionItem>    
+   
+        <apex:pageBlockSectionItem >
+                <apex:outputPanel >
+                <div class="js-tooltip"
+                            title="Only Dues that are mapped to a Type/Subtype will be available to be run.">
+                <i class="fa fa-exclamation-triangle" aria-hidden="true" style="color:#d47500; font-size: 13px;"></i><apex:outputLabel >Select due type to generate : </apex:outputLabel></div></apex:outputPanel>
+                 <apex:outputPanel layout="block" id="dues">
+                     <c:MultiselectPicklist leftLabel="Available Fees/Dues" 
+                         leftOption="{!unSelectedDues}"
+                         rightLabel="Fees/Dues to generate"
+                         rightOption="{!dueList}"
+                         size="10"
+                         width="200px"                                 
+                         /> 
+                <br/>                       
+                </apex:outputPanel>                             
+        </apex:pageBlockSectionItem>
+        <apex:pageBlockSectionItem >
+                <apex:outputPanel >
+                <table style="width:100%;">
+          <tbody>
+          <tr>
+          <td style="width:45%"></td> 
+          <td style="width:0.1%;"><apex:commandButton value="Generate" onclick="generateDues('confirm'); return false" reRender="headerSection"/></td>
+                <td style="width:20%;"><apex:commandButton status="WORKING" value="Cancel" onclick="cancelGenerate();return false;"/></td>
+                <td></td>
+                </tr>
+                </tbody>
+                </table>                     
+                </apex:outputPanel>
+            </apex:pageBlockSectionItem>
+  </apex:pageBlockSection>  
+  </apex:outputPanel>
+</apex:form>
+<apex:outputPanel rendered="{!IF(batchId!=null,true,false)}"><c:BatchStatus bachId="{!batchId}" url="GenerateDues"></c:BatchStatus></apex:outputPanel>
+</apex:pageBlock>
+</apex:page>

@@ -1,0 +1,29 @@
+<apex:page showHeader="true" sidebar="true" standardController="Statements__c" extensions="StatementsDetailController" action="{!initializeActivity}">
+	
+	<script>
+	if('{!isNew}'=='true'){
+		alert('You are not allowed to create new Statements manually.');
+		window.location.href = "{!returnPage}";
+	}
+	if('{!isStmtSummRelated}'=='true'){
+		alert('Please delete the related Statement Summary first.');
+		window.location.href = "/{!returnPage}";
+	}
+	if('{!isMemStmt}'=='true'){
+		alert('You are not allowed to delete Member Statements.');
+		window.location.href = "{!returnPage}";
+	}
+	</script>
+
+	<apex:outputPanel id="batch" rendered="{!IF(batchId!=null,true,false)}">
+		<script>
+			alert('The delete operation is started. This will take some time.');
+			window.location.href = "/{!returnPage}";
+		</script>
+	</apex:outputPanel>
+	<apex:pageMessage rendered="{!isMemStmt}" severity="Error" strength="2" summary="You are not allowed to delete Member Statements."/>
+	<apex:pageMessage rendered="{!isStmtSummRelated}" severity="Error" strength="2" summary="Please delete the related Statement Summary first."/>
+	<apex:pageMessage rendered="{!isEdit}" severity="Error" strength="2" summary="You do not have edit permissions on a Statement."/>
+	<apex:pageMessage rendered="{!isNew}" severity="Error" strength="2" summary="You are not allowed to create new Statements."/>
+	<apex:detail subject="{!Statements__c}" relatedList="true"></apex:detail>
+</apex:page>

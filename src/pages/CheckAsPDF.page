@@ -1,0 +1,303 @@
+<apex:page standardStyleSheets="false" showHeader="false" sidebar="false"  renderAs="{!IF(NOT(checkPreview==true),'pdf','pdf')}"  standardController="Vendor_Invoice_Check_Batch__c"    extensions="VendorCheckRunController"  applyBodyTag="false" action="{!getprintCheckList}">
+    <apex:includeScript value="{!URLFOR($Resource.jQuery_UI,'/jquery-ui-1.10.3.custom/js/jquery-3.2.1.min.js')}"/>  
+    <head>
+        <style>
+            p {
+            text-indent:10px;
+            }
+            body {
+            page-break-before:always;
+            }
+            pre {
+            display: inline;
+            }
+            @page{
+            margin:0in;
+            }
+            tr.spaceAboveCheckNum > td {
+            padding-top: 1.2em;
+            }
+            tr.spaceAbove > td {
+            padding-top: 0.6em;
+            }
+            tr.spaceAbovePay > td {
+            padding-top: 1.0em;
+            }
+            .totalAmount{
+            font-size:1.3em;
+            }
+            .page-break:not(:last-child) {
+            display:block;
+            overflow:hidden;
+            page-break-after:always;
+            }
+            .page-break2:not(:last-child) {
+            display:block;
+            overflow:hidden;
+            page-break-after:always;
+            }
+        </style>
+    </head>
+    <body>  
+        
+        <!-- Apex Repeat -->
+        <apex:repeat value="{!printedCheckVCList}" var="check" id="CheckRepeat">
+            <div class="page-break" style="position:relative; height:1056px;">  <!-- standard 11in page height (@100dpi) -->
+                <br/>
+                <br/>
+                <apex:outputText value="PREVIEW" rendered="{!checkPreview==true}"/>
+                <div  style="position:relative;width:8%;left:{!spacing.section1_check_number_left__c}px;top:{!spacing.section1_check_number_top__c}px;">
+                    <apex:outputText value="{!check.Check_Number__c}" />
+                </div> 
+                <div  style="position:relative;width:5.78%;left:{!spacing.date_left__c}px;top:{!spacing.date_top__c}px;">
+                    <apex:outputText value="{0,date,MM/dd/yyyy}" >
+                        <apex:param value="{!check.Check_Date__c}" />
+                    </apex:outputText>
+                </div>
+                <div  style="position:relative;width:8%;left:{!spacing.section1_amount_left__c}px;top:{!spacing.section1_amount_top__c}px;">
+                    <b>
+                        <apex:outputText value="${0, Number,###,###,###,##0.00}" >
+                            <apex:param value="{!check.Amount__c}"/>
+                        </apex:outputText>
+                    </b>
+                </div>
+                <div  style="position:relative;width:50%;left:{!spacing.amount_in_words_left__c}px;top:{!spacing.amount_in_words_top__c}px;">
+                    <b><apex:outputText value="{!printedCheckAmountWordsMap[IF(checkPreview==false,check.Id,check.Vendor__c)]}" /></b>
+                </div>
+                
+                <div  style="position:relative;width:50%;left:{!spacing.section1_vendor_name_left__c}px;top:{!spacing.section1_vendor_name_top__c}px;">
+                    <apex:outputText value="{!IF(!checkPreview,check.Vendor__r.Name,venPreviewMap[check.Vendor__c].Name)}" >
+                    </apex:outputText>
+                </div>
+               
+                <div  style="position:relative;width:50%;left:{!spacing.vendor_billing_address_left__c }px;top:{!spacing.vendor_billing_address_top__c }px;">
+                    <apex:outputText value="{!IF(!checkPreview,check.Vendor__r.ShippingStreet,venPreviewMap[check.Vendor__c].Vendor__r.ShippingStreet)}" >
+                    </apex:outputText> <br/>
+                    <apex:outputText value="{!IF(!checkPreview,check.Vendor__r.ShippingCity, venPreviewMap[check.Vendor__c].Vendor__r.ShippingCity)}" >
+                    </apex:outputText>{!IF(check.Vendor__r.ShippingCountry!=null ,',','')}
+                    <apex:outputText value="{!IF(!checkPreview,check.Vendor__r.ShippingCountry,venPreviewMap[check.Vendor__c].Vendor__r.ShippingCountry)}" >
+                    </apex:outputText>&nbsp;
+                    <apex:outputText value="{!IF(!checkPreview,check.Vendor__r.ShippingPostalCode,venPreviewMap[check.Vendor__c].Vendor__r.ShippingPostalCode)}" >
+                    </apex:outputText>
+                </div>
+                
+                <div  style="position:relative;width:50%;left:{!spacing.section2_vendor_name_left__c}px;top:{!spacing.section2_vendor_name_top__c}px;">
+                    Vendor: {!IF(!checkPreview,check.Vendor__r.Name,venPreviewMap[check.Vendor__c].Name)}
+                </div>
+                <div  style="position:relative;width:50%;left:{!spacing.section2_check_number_left__c}px;top:{!spacing.section2_check_number_top__c}px;">
+                    Check Number: <apex:outputText value="{!check.Check_Number__c}"/>
+                </div>
+                <table style="width:100%;position:relative;left:{!spacing.section2_left__c}px;top:{!spacing.section2_top__c}px;">
+                    <tr>
+                        <td width="40%">
+                        </td>
+                        <td width="20%">
+                        </td>
+                        <td width="20%">
+                            
+                        </td>
+                        <td width="20%">
+                            
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                        </td>
+                        <td style="padding-left:{!spacing.PO_number_header_left__c}px;padding-top:{!spacing.PO_number_header_top__c}px;">
+                            PO Number
+                        </td>
+                        <td  style="padding-left:{!spacing.Description_header_left__c}px;padding-top:{!spacing.Description_header_top__c}px;">
+                            Description
+                        </td>
+                        <td style="padding-left:{!spacing.section2_amount_header_left__c}px;padding-top:{!spacing.section2_amount_header_top__c}px;">
+                            Amount
+                        </td>
+                    </tr>
+                    <apex:repeat value="{!printedCheckVIMap[IF(checkPreview==false,check.Id,check.Vendor__c)]}" var="checkInvoice" id="CheckInvoicesRepeat" rendered="{!printedCheckNumberOfInvoicesMap[IF(checkPreview==false,check.Id,check.Vendor__c)]<7}">
+                        <tr>
+                            <td style="padding-left:{!spacing.section2_invoice_number_and_date_left__c}px;padding-top:{!spacing.section2_invoice_number_and_date_top__c}px;">
+                                <apex:outputText value="Invoice # {!checkInvoice.Invoice_Number__c}"/>
+                                <apex:outputText value=" - {!checkInvoice.Invoice_Date__c}"/>
+                            </td>
+                            <td style="padding-left:{!spacing.PO_number_left__c}px;padding-top:{!spacing.PO_number_top__c}px;">
+                            </td>
+                            <td style="padding-left:{!spacing.Description_left__c}px;padding-top:{!spacing.Description_top__c}px;">
+                                <apex:outputText value="Note: {!checkInvoice.Notes__c}" rendered="{!checkInvoice.Include_Notes_on_Check__c}"/>
+                            </td>
+                            <td style="padding-left:{!spacing.section2_amount_left__c}px;padding-top:{!spacing.section2_amount_top__c}px;">
+                                <apex:outputText value="{0,Number,###,###,###,##0.00}"><apex:param value="{!printedCheckAmountSentMap[checkInvoice.Id]}"/></apex:outputText>
+                            </td>
+                        </tr>
+                    </apex:repeat>
+                    <apex:repeat value="{!printedCheckFJLMap[IF(checkPreview==false,check.Id,check.Vendor__c)]}" var="fjlId" rendered="{!printedCheckNumberOfInvoicesMap[IF(checkPreview==false,check.Id,check.Vendor__c)]<7}">
+                        <apex:repeat value="{!printedCheckFJLMap[IF(checkPreview==false,check.Id,check.Vendor__c)][fjlId]}" var="fa">
+                            <tr>
+                                <td style="padding-left:{!spacing.financial_account_name_and_number_left__c}px;padding-top:{!spacing.financial_account_name_and_number_top__c}px;">
+                                    <apex:outputText value="{!fa.accNum} - "/>
+                                    <apex:outputText value="{!LEFT(fa.accName, 28)}"/>
+                                </td>
+                                <td></td>
+                                <td></td>
+                                <td style="padding-left:{!spacing.section2_amount_left__c}px;padding-top:{!spacing.section2_amount_top__c}px;">
+                                    <apex:outputText value="{0,Number,###,###,###,##0.00}"><apex:param value="{!fa.accTotal}"/></apex:outputText>
+                                </td>
+                            </tr>
+                        </apex:repeat>
+                    </apex:repeat>
+                    
+                    <apex:outputPanel rendered="{!printedCheckNumberOfInvoicesMap[IF(checkPreview==false,check.Id,check.Vendor__c)]>=7}" style="position:relative;top:{!spacing.section2_top__c}px;left:{!spacing.section2_left__c}px;">
+                        See attached doc
+                        
+                    </apex:outputPanel>
+                </table>
+                
+                <div  style="position:relative;width:50%;left:{!spacing.section3_vendor_name_left__c}px;top:{!spacing.section3_vendor_name_top__c}px;">
+                    Vendor: {!IF(!checkPreview,check.Vendor__r.Name,venPreviewMap[check.Vendor__c].Name)}
+                </div>
+                <div  style="position:relative;width:50%;left:{!spacing.section3_check_number_left__c}px;top:{!spacing.section3_check_number_top__c}px;">
+                    Check Number: <apex:outputText value="{!check.Check_Number__c}"/>
+                </div>
+                <table style="width:100%;position:relative;top:{!spacing.section3_top__c}px;left:{!spacing.section3_left__c}px">
+                    <tr>
+                        <td width="40%">
+                        </td>
+                        <td width="20%">
+                        </td>
+                        <td width="20%">
+                            
+                        </td>
+                        <td width="20%">
+                            
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            
+                        </td>
+                        <td style="padding-left:{!spacing.PO_number_header_left__c}px;padding-top:{!spacing.PO_number_header_top__c}px;">
+                            PO Number
+                        </td>
+                        <td  style="padding-left:{!spacing.Description_header_left__c}px;padding-top:{!spacing.Description_header_top__c}px;">
+                            Description
+                        </td>
+                        <td style="padding-left:{!spacing.section2_amount_header_left__c}px;padding-top:{!spacing.section2_amount_header_top__c}px;">
+                            Amount
+                        </td>
+                    </tr>
+                    <apex:repeat value="{!printedCheckVIMap[IF(checkPreview==false,check.Id,check.Vendor__c)]}" var="checkInvoice" rendered="{!printedCheckNumberOfInvoicesMap[IF(checkPreview==false,check.Id,check.Vendor__c)]<7}">
+                        <tr>
+                            <td style="padding-left:{!spacing.section2_invoice_number_and_date_left__c}px;padding-top:{!spacing.section2_invoice_number_and_date_top__c}px;">
+                                <apex:outputText value="Invoice # {!checkInvoice.Invoice_Number__c}"/>
+                                <apex:outputText value=" - {!checkInvoice.Invoice_Date__c}"/>
+                            </td>
+                            <td style="padding-left:{!spacing.PO_number_left__c}px;padding-top:{!spacing.PO_number_top__c}px;">
+                            </td>
+                            <td style="padding-left:{!spacing.Description_left__c}px;padding-top:{!spacing.Description_top__c}px;">
+                                <apex:outputText value="Note: {!checkInvoice.Notes__c}" rendered="{!checkInvoice.Include_Notes_on_Check__c}"/>
+                            </td>
+                            <td style="padding-left:{!spacing.section2_amount_left__c}px;padding-top:{!spacing.section2_amount_top__c}px;">
+                                <apex:outputText value="{0,Number,###,###,###,##0.00}"><apex:param value="{!printedCheckAmountSentMap[checkInvoice.Id]}"/></apex:outputText>
+                            </td>
+                        </tr>
+                    </apex:repeat>
+                    <apex:repeat value="{!printedCheckFJLMap[IF(checkPreview==false,check.Id,check.Vendor__c)]}" var="fjlId" rendered="{!printedCheckNumberOfInvoicesMap[IF(checkPreview==false,check.Id,check.Vendor__c)]<7}">
+                        <apex:repeat value="{!printedCheckFJLMap[IF(checkPreview==false,check.Id,check.Vendor__c)][fjlId]}" var="fa">
+                            <tr>
+                                <td style="padding-left:{!spacing.financial_account_name_and_number_left__c}px;padding-top:{!spacing.financial_account_name_and_number_top__c}px;">
+                                    <apex:outputText value="{!fa.accNum} - "/>
+                                    <apex:outputText value="{!LEFT(fa.accName, 28)}"/>
+                                </td>
+                                <td></td>
+                                <td></td>
+                                <td style="padding-left:{!spacing.section2_amount_left__c}px;padding-top:{!spacing.section2_amount_top__c}px;">
+                                    <apex:outputText value="{0,Number,###,###,###,##0.00}"><apex:param value="{!fa.accTotal}"/></apex:outputText>
+                                </td>
+                            </tr>
+                        </apex:repeat>
+                    </apex:repeat>
+                    
+                    <apex:outputPanel rendered="{!printedCheckNumberOfInvoicesMap[IF(checkPreview==false,check.Id,check.Vendor__c)]>=7}" style="position:relative;top:{!spacing.section3_top__c}px;left:{!spacing.section3_left__c}px;">
+                        See attached doc
+                        
+                    </apex:outputPanel>
+                </table>
+            </div>
+            
+            <!-- <hr width="90%"/> -->
+        </apex:repeat>
+        <apex:repeat value="{!printedCheckVCList}" var="check" id="CheckRepeat2">
+            <apex:outputPanel rendered="{!printedCheckNumberOfInvoicesMap[IF(checkPreview==false,check.Id,check.Vendor__c)]>=7}">
+                <div class="page-break2" style="position:relative; height:1050px">  <!-- standard 11in page height (@100dpi) -->
+                    <br/>
+                    <br/>
+                    <div  style="position:relative;width:50%;left:{!spacing.section2_vendor_name_left__c}px;top:{!spacing.section2_vendor_name_top__c}px;">
+                        Vendor: {!IF(!checkPreview,check.Vendor__r.Name,venPreviewMap[check.Vendor__c].Name)}
+                    </div>
+                    <div  style="position:relative;width:50%;left:{!spacing.section2_check_number_left__c}px;top:{!spacing.section2_check_number_top__c}px;">
+                        Check Number: <apex:outputText value="{!check.Check_Number__c}"/>
+                    </div>
+                    <table style="width:100%;position:relative;top:{!spacing.section2_top__c}px;left:{!spacing.section2_left__c}px;">
+                        <tr>
+                            <td width="40%">
+                            </td>
+                            <td width="20%">
+                            </td>
+                            <td width="20%">
+                                
+                            </td>
+                            <td width="20%">
+                                
+                            </td>
+                        </tr>
+                        <tr>
+                            <td >
+                                
+                            </td>
+                            <td style="padding-left:{!spacing.PO_number_header_left__c}px;padding-top:{!spacing.PO_number_header_top__c}px;">
+                                PO Number
+                            </td>
+                            <td  style="padding-left:{!spacing.Description_header_left__c}px;padding-top:{!spacing.Description_header_top__c}px;">
+                                Description
+                            </td>
+                            <td style="padding-left:{!spacing.section2_amount_header_left__c}px;padding-top:{!spacing.section2_amount_header_top__c}px;">
+                                Amount
+                            </td>
+                        </tr>
+                        <apex:repeat value="{!printedCheckVIMap[IF(checkPreview==false,check.Id,check.Vendor__c)]}" var="checkInvoice" id="CheckInvoicesRepeat">
+                            
+                            <tr>
+                                <td style="padding-left:{!spacing.section2_invoice_number_and_date_left__c}px;padding-top:{!spacing.section2_invoice_number_and_date_top__c}px;">
+                                    <apex:outputText value="Invoice # {!checkInvoice.Invoice_Number__c}"/>
+                                    <apex:outputText value=" - {!checkInvoice.Invoice_Date__c}"/>
+                                </td>
+                                <td style="padding-left:{!spacing.PO_number_left__c}px;padding-top:{!spacing.PO_number_top__c}px;">
+                                </td>
+                                <td style="padding-left:{!spacing.Description_left__c}px;padding-top:{!spacing.Description_top__c}px;">
+                                    <apex:outputText value="Note: {!checkInvoice.Notes__c}" rendered="{!checkInvoice.Include_Notes_on_Check__c}"/>
+                                </td>
+                                <td style="padding-left:{!spacing.section2_amount_left__c}px;padding-top:{!spacing.section2_amount_top__c}px;">
+                                    <apex:outputText value="{0,Number,###,###,###,##0.00}"><apex:param value="{!printedCheckAmountSentMap[checkInvoice.Id]}"/></apex:outputText>
+                                </td>
+                            </tr>
+                        </apex:repeat>
+                        <apex:repeat value="{!printedCheckFJLMap[IF(checkPreview==false,check.Id,check.Vendor__c)]}" var="fjlId">
+                            <apex:repeat value="{!printedCheckFJLMap[IF(checkPreview==false,check.Id,check.Vendor__c)][fjlId]}" var="fa">
+                                <tr>
+                                    <td style="padding-left:{!spacing.financial_account_name_and_number_left__c}px;padding-top:{!spacing.financial_account_name_and_number_top__c}px;">
+                                        <apex:outputText value="{!fa.accNum} - "/>
+                                        <apex:outputText value="{!LEFT(fa.accName, 28)}"/>
+                                    </td>
+                                    <td></td>
+                                    <td></td>
+                                    <td style="padding-left:{!spacing.section2_amount_left__c}px;padding-top:{!spacing.section2_amount_top__c}px;">
+                                        <apex:outputText value="{0,Number,###,###,###,##0.00}"><apex:param value="{!fa.accTotal}"/></apex:outputText>
+                                    </td>
+                                </tr>
+                            </apex:repeat>
+                        </apex:repeat>
+                    </table>
+                </div>
+            </apex:outputPanel>
+        </apex:repeat>
+    </body>
+</apex:page>

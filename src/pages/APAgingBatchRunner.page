@@ -1,0 +1,54 @@
+<apex:page id="thePage" showHeader="true" sidebar="true" controller="APAgingBatchRunnerController">
+    <head>
+        <apex:stylesheet value="{!URLFOR($Resource.fontawesome,'/css/font-awesome.css')}"/>
+    </head>
+    <style>
+    .vendButton
+    {    
+    border: 2px solid #EEE8AA !important;
+    border-radius: 7px !important;
+    color: #F8F8FF !important;
+    background: #1797c0 !important;
+    text-shadow: 0.05px 0 black;
+    height: 27px;
+    width: 250px;
+    position: relative;
+    top: -5px;
+    text-align: center;
+    font-weight:600 !important;    
+    font-size: 12px !important;
+    border-style: outset;
+    margin-top:10px !important;    
+    }
+        
+    .vendButton:hover 
+    {
+        background: #1797af !important;
+    }
+    </style>
+    <br/>
+    <apex:outputLink id="link" styleClass="tooltip" value="/{!$Page.FinancialLandingPage}">Financial Landing Page </apex:outputLink>&nbsp; <i class="fa fa-angle-right" aria-hidden="true"></i>&nbsp; Aging Setup
+    <br/>
+    <br/>
+    <apex:form >
+    
+    <apex:pageBlock >
+    <apex:pageMessages id="Msg" escape="false"/>
+        <br/>
+        <apex:outputPanel rendered="{!IF($CurrentPage.Parameters.Name=='APAging', true, false)}">
+        <apex:pageBlockSection columns="3">
+            <apex:pageBlockSectionItem >Effective Date :<apex:inputField value="{!EffecDate.Aging_Effective_Date__c}"/></apex:pageBlockSectionItem><apex:pageBlockSectionItem />
+        </apex:pageBlockSection>
+            <br/><br/><apex:commandButton disabled="{!runningBatchStatus}" value="Run AP Batch" action="{!runBatch}" styleClass="vendButton" style="margin-left: 404px; position: relative;"/>
+        </apex:outputPanel>
+        <apex:outputPanel rendered="{!IF($CurrentPage.Parameters.Name=='MemberAging', true, false)}">
+        <apex:pageBlockSection columns="3">
+            <apex:pageBlockSectionItem >Effective Date :<apex:inputField value="{!EffecDate.Aging_Effective_Date__c}"/></apex:pageBlockSectionItem><apex:pageBlockSectionItem />
+        </apex:pageBlockSection>
+            <br/><br/><apex:commandButton disabled="{!runningBatchStatus}" value="Run AR Aging Batch" action="{!runBatch}" styleClass="vendButton" style="margin-left: 404px; position: relative;"/>
+        </apex:outputPanel>
+    </apex:pageBlock>
+    </apex:form>
+    <apex:outputPanel rendered="{!IF(batchId!=null,true,false)}">
+    <c:BatchStatus bachId="{!batchId}" url="APAgingBatchRunner?Name={!$CurrentPage.Parameters.Name}"></c:BatchStatus></apex:outputPanel>
+</apex:page>

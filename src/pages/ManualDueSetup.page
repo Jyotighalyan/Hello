@@ -1,0 +1,167 @@
+<apex:page showHeader="true" sidebar="true" controller="ManualDueSetupController">
+    <apex:includescript value="{!URLFOR($Resource.jqueryDatatable_3embed,'/3embed/jquery-1.11.1.min.js')}" />
+    <apex:stylesheet value="{!URLFOR($Resource.jqueryDatatable_3embed,'/3embed/jquery.dataTables.min.css')}" />
+    <apex:stylesheet value="{!URLFOR($Resource.fontawesome,'/css/font-awesome.css')}"/>
+    <apex:includescript value="{!URLFOR($Resource.jqueryDatatable_3embed,'/3embed/jquery.dataTables.min.js')}" />
+    <apex:includescript value="{!URLFOR($Resource.foretees,'/ProgressBar/progressbar.js')}" />
+
+    <style>
+     body .bPageBlock .pbBody .red .pbSubheader{
+        background-color:#1797c0;
+    }
+    </style>
+    <script>
+
+     function cancel()
+     {
+        window.location.href = "/{!JSENCODE(HTMLENCODE(memberRecord.id))}";
+     }
+
+    </script>
+    <apex:sectionHeader title="Manual Due" subtitle="{!memberRecord.Name}" />
+    <apex:outputLink id="link" styleClass="tooltip" value="/{!memberRecord.id}"> {!memberRecord.Name}  </apex:outputLink> &nbsp; <i class="fa fa-angle-right" aria-hidden="true"></i>&nbsp; New Manual Due
+    <br/> <br/> 
+    <apex:actionStatus id="WORKING" >
+        <apex:facet name="start">
+            <div class="waitingSearchDiv" style="background-color: #000;
+                height: 100%;filter: alpha(opacity=50);opacity:0.5;width:100%;">
+            </div>
+            <div class="waitingSearchDiv" style="z-index:999;width:100%">
+                <div class="waitingHolder" style="z-index:999;top: 175px; left: 20px; width: 200px;height: 25px;background-color: #fff;border: 1px solid black;border-radius: 5px;padding-top: 10px;color: #000;">
+                    <span class="waitingDescription" style="color:#000;">Working...</span>
+                    <img class="waitingImage" src="/img/loading.gif" title="Please Wait..." />
+                </div>
+            </div>
+        </apex:facet>
+    </apex:actionStatus> 
+    <apex:form >
+        <apex:pageBlock >
+        <apex:pageMessage strength="2" severity="info" summary="{!$CurrentPage.parameters.message}" rendered="{!IF($CurrentPage.parameters.message==null, false, true)}"/>
+        <apex:pageMessages id="msgs"/>
+            <br/>
+            <legend><b>Manual Due</b></legend>
+            <br/>
+            <apex:pageBlockSection columns="1">
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Due Name :"/>
+                    <apex:outputPanel >
+                        <apex:outputText style="height:5px;"/>
+                        <div class="requiredInput"><div class="requiredBlock"/><apex:inputField value="{!dueRec.Member_Dues__c}">
+                            <apex:actionSupport event="onchange" status="WORKING" action="{!changeDueSelected}" reRender="frequency, StatDescription, serviceCharge, Taxes"/>
+                        </apex:inputField></div>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Frequency :"/>
+                    <apex:outputPanel id="frequency">
+                        <apex:outputText value="{!memDues.Default_Billing_Frequency__c}"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Post Date :"/>
+                    <apex:outputPanel >
+                        <div class="requiredInput"><div class="requiredBlock"/><apex:inputField value="{!dueRec.Date__c}"/></div>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Amount : "/>
+                    <apex:outputPanel >
+                        <apex:inputField id="ChargeAmountID" value="{!dueRec.Amount__c}" onkeyup="calculateTax('dues');"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Statement Description :"/>
+                    <apex:outputPanel id="StatDescription">
+                        <apex:inputField value="{!dueRec.Statement_Description__c}"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Notes :"/>
+                    <apex:outputPanel >
+                        <apex:inputField value="{!dueRec.Internal_Notes__c}"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+            </apex:pageBlockSection>
+            <br/>
+            <apex:outputPanel styleClass="red" id="serviceCharge">
+                <apex:inputHidden id="taxes_on_service_charge" value="{!TaxesAppliedOnSC}"/>
+                <apex:inputHidden id="TaxApplyOnServiceCharge" value="{!SCTaxableStatus}"/>
+                <apex:inputHidden id="exemptStatus" value="{!memberRecord.Tax_Exempt__c}"/>
+                <apex:pageBlockSection title="Service Charge" rendered="{!renderSC}" columns="1">
+                    <br/>
+                    <table width="100%">
+                        <thead>
+                            <th style="width: 40%;">Service Charge</th>
+                            <th style="width: 20%;">Service Charge Rate (%)</th>
+                            <th style="width: 20%;">Service Charge Amount ({!currencySymbol})</th>
+                            <th style="width: 20%;"></th>
+                        </thead>
+                        <tbody>
+                            <apex:outputPanel >
+                            <tr></tr>
+                            <tr></tr>
+                            <tr>
+                                <td>{!taxesAndSC.serviceCharge} ({!SCTaxableStatus})</td>
+                                <td><span id="ServiceCharge_amt">{!taxesAndSC.SCPercentage}</span></td>
+                                <td><apex:outputText id="Service_charge_amt" value="{!taxesAndSC.SCAmount}"/><apex:inputHidden id="Service_charge_amt1" value="{!taxesAndSC.SCAmount}"/></td>
+                                <td></td>
+                            </tr>
+                            </apex:outputPanel>
+                        </tbody>
+                        <tfoot>
+                            <td></td>
+                            <td></td>
+                            <td><b>Sub Total : {!currencySymbol}<span id="amount_With_serviceCharge"></span></b></td>
+                        </tfoot>
+                    </table>
+                    <script>
+                        calculateTax('dues');
+                    </script>
+                </apex:pageBlockSection>
+            </apex:outputPanel>
+            <apex:outputPanel styleClass="red" id="Taxes">
+                <apex:pageBlockSection title="Taxes" rendered="{!renderTaxes}" columns="1">
+                    <br/>
+                    <table width="100%" id="taxTable">
+                    <thead>
+                        <th style="width: 40%;">Tax Name</th>
+                        <th style="width: 20%;">Percentage (%)</th>
+                        <th style="width: 20%;">Tax Amount ({!currencySymbol})</th>
+                        <th style="width: 20%;">Tax Exempt</th>
+                    </thead>
+                    <tbody>
+                        <apex:repeat value="{!taxesAndSC.taxesList}" var="tax">
+                            <apex:outputPanel >
+                            <tr>
+                                <td>{!tax.taxName}</td>
+                                <td>{!tax.percentage}</td>
+                                <td><apex:outputText id="taxAm" value="{!tax.Amount}"/><apex:inputHidden id="taxAmount" value="{!tax.Amount}"/></td>
+                                <td><apex:inputCheckbox value="{!tax.taxExemption}" onchange="exemptTax(this); return false"/></td>
+                            </tr>
+                            </apex:outputPanel>
+                        </apex:repeat>
+                    </tbody>
+                    <tfoot>
+                        <td></td>
+                        <td></td>
+                        <td><b>Final Total : {!currencySymbol}<span id="FinalTotal"></span></b></td>
+                        <td></td>
+                    </tfoot>
+                    </table>
+                    <script>
+                    if ('{!renderSC}'=='false') {
+                        calculateTax('dues');
+                    }
+                    </script>
+                </apex:pageBlockSection>                
+            </apex:outputPanel>
+    </apex:pageBlock>
+    <apex:pageBlock >
+        <div align="center">
+            <apex:commandButton value="Create Due" action="{!save}" status="WORKING"  style=" width: 203px;height: 30px; color:white;background:#1797c0;"/>
+            <apex:commandButton value="Cancel" status="WORKING" onclick="cancel(); return false"  style=" width: 203px;height: 30px; color:white;background:#1797c0;"/>
+        </div>
+    </apex:pageBlock>
+    </apex:form>
+</apex:page>

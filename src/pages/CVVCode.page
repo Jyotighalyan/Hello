@@ -1,0 +1,6 @@
+<apex:page showHeader="false" sideBar="false" >
+    <apex:PageBlock >
+        <p></p><h1> How to find your card's CVV Code: </h1><p></p>
+        <apex:image url="{!$Resource.CVVCode}"></apex:image>
+    </apex:PageBlock>
+</apex:page>

@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <customSettingsType>Hierarchy</customSettingsType>
+    <description>stored service charges</description>
+    <enableFeeds>false</enableFeeds>
+    <fields>
+        <fullName>Banquet_Bar_Service_Charge__c</fullName>
+        <description>each item service charge for banquet bar</description>
+        <externalId>false</externalId>
+        <label>Banquet Bar Service Charge</label>
+        <precision>18</precision>
+        <required>false</required>
+        <scale>2</scale>
+        <trackTrending>false</trackTrending>
+        <type>Percent</type>
+    </fields>
+    <fields>
+        <fullName>Banquet_Beverage_Service_Charge__c</fullName>
+        <description>service charge on beverages each item of banquet</description>
+        <externalId>false</externalId>
+        <label>Banquet Beverage Service Charge</label>
+        <precision>18</precision>
+        <required>false</required>
+        <scale>2</scale>
+        <trackTrending>false</trackTrending>
+        <type>Percent</type>
+    </fields>
+    <fields>
+        <fullName>Banquet_Fitness_Service_Charge__c</fullName>
+        <externalId>false</externalId>
+        <label>Banquet Fitness Service Charge</label>
+        <precision>18</precision>
+        <required>false</required>
+        <scale>2</scale>
+        <trackTrending>false</trackTrending>
+        <type>Percent</type>
+    </fields>
+    <fields>
+        <fullName>Banquet_Food_Service_Charge__c</fullName>
+        <description>food service charge on each banquet item</description>
+        <externalId>false</externalId>
+        <label>Banquet Food Service Charge</label>
+        <precision>18</precision>
+        <required>false</required>
+        <scale>2</scale>
+        <trackTrending>false</trackTrending>
+        <type>Percent</type>
+    </fields>
+    <fields>
+        <fullName>Banquet_Other_Service_Charge__c</fullName>
+        <externalId>false</externalId>
+        <label>Banquet Other Service Charge</label>
+        <precision>18</precision>
+        <required>false</required>
+        <scale>2</scale>
+        <trackTrending>false</trackTrending>
+        <type>Percent</type>
+    </fields>
+    <fields>
+        <fullName>Service_Charge_Guest__c</fullName>
+        <description>Service Charge Guest</description>
+        <externalId>false</externalId>
+        <inlineHelpText>Use this service charge to charge non-member events and banquets</inlineHelpText>
+        <label>Service Charge Guest</label>
+        <precision>18</precision>
+        <required>false</required>
+        <scale>3</scale>
+        <trackTrending>false</trackTrending>
+        <type>Percent</type>
+    </fields>
+    <fields>
+        <fullName>Service_Charge_Member__c</fullName>
+        <description>Member Service Charge %</description>
+        <externalId>false</externalId>
+        <label>Service Charge Member</label>
+        <precision>18</precision>
+        <required>false</required>
+        <scale>3</scale>
+        <trackTrending>false</trackTrending>
+        <type>Percent</type>
+    </fields>
+    <fields>
+        <fullName>Service_Charge_for_food__c</fullName>
+        <description>Service Charge for food</description>
+        <externalId>false</externalId>
+        <inlineHelpText>Service Charge for food</inlineHelpText>
+        <label>Service Charge for food</label>
+        <precision>18</precision>
+        <required>false</required>
+        <scale>3</scale>
+        <trackTrending>false</trackTrending>
+        <type>Percent</type>
+    </fields>
+    <fields>
+        <fullName>Service_Charge_general__c</fullName>
+        <description>Service Charge general</description>
+        <externalId>false</externalId>
+        <inlineHelpText>Service Charge general</inlineHelpText>
+        <label>Service Charge general</label>
+        <precision>18</precision>
+        <required>false</required>
+        <scale>3</scale>
+        <trackTrending>false</trackTrending>
+        <type>Percent</type>
+    </fields>
+    <label>ServiceCharges</label>
+    <visibility>Public</visibility>
+</CustomObject>

@@ -1,0 +1,65 @@
+<apex:page showHeader="true" sidebar="true" controller="CancelEventController" action="{!cancelChild}">
+
+  <!-- Scripts -->
+    <apex:includeScript value="{!URLFOR($Resource.jQuery_UI,'/jquery-ui-1.10.3.custom/js/jquery-3.2.1.min.js')}"/>  
+
+     <apex:includeScript value="{!URLFOR($Resource.jQuery_UI,'/jquery-ui-1.10.3.custom/js/jquery-ui-1.10.3.custom.min.js')}"/>
+   
+    <!-- Stylings -->
+     <apex:stylesheet value="{!URLFOR($Resource.jQuery_UI, '/jquery-ui-1.10.3.custom/css/ui-lightness/jquery-ui-1.10.3.custom.min.css')}"/>
+    
+    <apex:outputPanel rendered="{!isShowPopUp}">
+         <div id="dialog-confirm" title="Cancel Event" class="no-close">        
+         <p>Are you sure you wish to cancel this banquet? Please make sure you've picked the Line Items you wish to charge for. Upon cancelling, all event information will be final and cannot be changed.</p>
+        </div>
+        
+        <script>                       
+            $( "#dialog-confirm" ).dialog({
+              dialogClass: "no-close",
+              resizable: false,
+              height: "auto",
+              width: 400,
+              modal: true,
+              position: "center",
+              buttons: {
+                "Continue": function() {                   
+                     cancelEventAF();                  
+                     $( this ).dialog( "close" );
+                },                
+                "Back": function() {                   
+                     backToEventAF();
+                    $( this ).dialog( "close" );
+                }                                  
+              } 
+            });               
+        </script>
+</apex:outputPanel> 
+
+<apex:outputPanel rendered="{!isInfoPopUp}">
+         <div id="dialog-confirm" title="Info" class="no-close">        
+         <p>This event is already cancelled or closed, Please go back to the event.</p>
+        </div>
+        
+        <script>                       
+            $( "#dialog-confirm" ).dialog({
+              dialogClass: "no-close",
+              resizable: false,
+              height: "auto",
+              width: 400,
+              modal: true,
+              position: "center",
+              buttons: {                           
+                "Back": function() {                   
+                     backToEventAF();
+                    $( this ).dialog( "close" );
+                }                                  
+              } 
+            });               
+        </script>
+</apex:outputPanel> 
+
+<apex:form >
+    <apex:actionFunction name="cancelEventAF" action="{!cancelEvent}"/>
+    <apex:actionFunction name="backToEventAF" action="{!backToEvent}"/>
+</apex:form>
+</apex:page>

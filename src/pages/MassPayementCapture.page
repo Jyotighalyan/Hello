@@ -1,0 +1,218 @@
+<apex:page controller="MassPayementCaptureCont" >
+    <!-- Scripts -->
+    <apex:includeScript value="{!URLFOR($Resource.jQuery_UI,'/jquery-ui-1.10.3.custom/js/jquery-3.2.1.min.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.jQuery_UI,'/jquery-ui-1.10.3.custom/js/jquery-ui-1.10.3.custom.min.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.jQuery_UI,'/jquery-ui-1.10.3.custom/js/jquery.dataTables.1.10.15.js')}"/>
+    
+    <!--Styles-->
+    <apex:stylesheet value="{!URLFOR($Resource.jQuery_UI, '/jquery-ui-1.10.3.custom/css/ui-lightness/jquery-ui-1.10.3.custom.min.css')}"/>
+    <apex:stylesheet value="{!URLFOR($Resource.jQuery_UI, '/jquery-ui-1.10.3.custom/css/ui-lightness/jquery.dataTables.1.10.15.css')}"/>
+    <script>
+    var j$ = jQuery.noConflict();
+    
+    j$('table.PAYTABLE').dataTable({
+        'iDisplayLength':200,
+        'aLengthMenu':[[-1],['All']]
+    });
+    </script>
+    <apex:form id="theForm">
+        
+        <script>
+        function isNumber(n) {
+            return !isNaN(parseFloat(n)) && isFinite(n);
+        }
+        var amounts = [];
+        
+        j$(document).ready(function() {
+            var empty = false;
+            var mem = '';
+            var total=0;
+            totalTxn=0;
+            var totalRows=0;
+            j$('.allAmounts').each(function() {
+                mem = j$(this).val();
+                if (mem != '') {
+                    totalTxn++;
+                    amounts[totalRows]=mem;
+                    total = total + Number(mem);
+                } 
+                totalRows++;
+            });
+            j$("[id$='totalTXN']").text(totalTxn);
+            j$("[id$='totalAmt']").text(total.toFixed(2));
+        });
+        
+        
+        
+        function executeCalculation(data,id) {
+            var amt=0;
+            if(document.getElementById(id).value!='' && document.getElementById(id).value!=null){
+                if(isNumber(document.getElementById(id).value)){
+                    amt= Number(document.getElementById(id).value);
+                }else{
+                    alert('Only digits are allowed in amount');
+                    document.getElementById(id).value='';
+                    return false;
+                }
+            }
+            
+            amounts[data-1] = amt;
+            var total=0;
+            var totalTxn=0
+            for (i = 0; i < amounts.length ; i++) {
+                if(amounts[i]!=0){
+                    totalTxn++;
+                    total = total + Number(amounts[i]) ;
+                }
+            }
+            j$("[id$='totalTXN']").text(totalTxn);
+            j$("[id$='totalAmt']").text(total.toFixed(2));
+        }
+        </script>
+        
+        <apex:actionStatus id="WORKING">
+            <apex:facet name="start">
+                <div class="waitingSearchDiv" style="background-color: #000;height: 100%;filter: alpha(opacity=50);opacity:0.5;width:100%;"></div>
+                <div class="waitingSearchDiv" style="z-index:999;width:100%"> 
+                    <div class="waitingHolder" style="z-index:999;top: 175px; left: 20px; width: 200px;height: 25px;background-color: #fff;border: 1px solid black;border-radius: 5px;padding-top: 10px;color: #000;">
+                        <span class="waitingDescription" style="color:#000;">Working...</span>
+                        <img class="waitingImage" src="/img/loading.gif" title="Please Wait..." />
+                    </div>
+                </div> 
+            </apex:facet>
+        </apex:actionStatus>
+        <apex:outputPanel id="MESSAGES">
+            <apex:pageMessages ></apex:pageMessages>
+        </apex:outputPanel>
+        <apex:pageBlock id="information">
+            <apex:pageBlockSection title="Payment method" id="DBIPBS">
+                <apex:pageBlockSectionItem >
+                    Select payment method : 
+                    <apex:selectList value="{!paymentType}" size="1">
+                        <apex:actionSupport status="WORKING" action="{!changePayType}" event="onchange" />
+                        <apex:selectOptions value="{!paymentTypes}"/>
+                    </apex:selectList>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    Deposite Date :
+                    <apex:inputField value="{!bd.Deposit_Date__c}"/>
+                </apex:pageBlockSectionItem>
+            </apex:pageBlockSection>	
+            <apex:pageBlockSection columns="19">	
+                <apex:pageBlockSectionItem >
+                    Upload CSV file<apex:inputFile value="{!csvFileBody}" accept="csv" contentType="text/csv" />
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:commandButton value="Upload CSV" action="{!readFromFile}"/>
+                </apex:pageBlockSectionItem>
+            </apex:pageBlockSection>	
+        </apex:pageBlock>
+        <apex:pageMessage severity="INFO" strength="1" summary="Note: Upon saving the page, this deposit batch will be posted automatically and payments will be applied to member accounts starting with the oldest open charges."/>
+        <apex:pageBlock id="DATATABLE" title="Payments">
+            <apex:pageBlockTable styleClass="PAYTABLE" value="{!CreditCardListV}" var="p">
+                <apex:column >
+                    <apex:commandLink value="Del" status="WORKING" action="{!delCC}">
+                        <apex:param name="p1" value="{!p.index}" assignTo="{!cObjIndex}" />
+                    </apex:commandLink>
+                </apex:column>
+                <apex:column headerValue="Member">
+                    <apex:inputField styleClass="MEM{!p.index}" value="{!p.txnObj.Customer__c }" >
+                    </apex:inputField> 
+                </apex:column>
+                <apex:column headerValue="Amount">
+                    <div class="requiredInput">
+                        <div class="requiredBlock"></div>
+                        <apex:inputText styleClass="allAmounts" id="amount" value="{!p.amount}" onchange="executeCalculation('{!p.index}','{!$Component.amount}');" >
+                        </apex:inputText>
+                    </div>
+                </apex:column>
+                <apex:column headerValue="Payment Date">
+                    <div class="requiredInput">
+                        <div class="requiredBlock"></div>
+                        <apex:inputField value="{!p.txnObj.Date__c}" >
+                        </apex:inputField>
+                    </div>
+                </apex:column>
+                <apex:column headerValue="Statement Description">
+                    <div class="requiredInput">
+                        <div class="requiredBlock"></div>
+                        <apex:inputField value="{!p.txnObj.Statement_Description__c}">
+                        </apex:inputField>
+                    </div>
+                </apex:column>
+                <apex:column headerValue="Cardholder Name" rendered="{!ccPay}">
+                    <div class="requiredInput">
+                        <div class="requiredBlock"></div>
+                        <apex:inputField value="{!p.txnObj.Cardholder_Name__c}">
+                        </apex:inputField>
+                    </div>
+                </apex:column>
+                <apex:column headerValue="Card Type" rendered="{!ccPay}">
+                    <div class="requiredInput">
+                        <div class="requiredBlock"></div>
+                        <apex:inputField value="{!p.txnObj.Card_Type__c}">
+                        </apex:inputField>
+                    </div>
+                </apex:column>
+                <apex:column headerValue="Last 4 Digits" rendered="{!ccPay}">
+                    <div class="requiredInput">
+                        <div class="requiredBlock"></div>
+                        <apex:inputField value="{!p.txnObj.Card_Last_4_Digits__c}" >
+                        </apex:inputField>
+                    </div>
+                </apex:column>
+                <apex:column headerValue="Name on Account" rendered="{!achPay}">
+                    <div class="requiredInput">
+                        <div class="requiredBlock"></div>
+                        <apex:inputField value="{!p.txnObj.Name_on_Account__c}">
+                        </apex:inputField>
+                    </div>
+                </apex:column>
+                <apex:column headerValue="Bank Name"  rendered="{!achPay}">
+                    <apex:inputField value="{!p.txnObj.Bank_Name__c}">
+                    </apex:inputField>
+                </apex:column>
+                <apex:column headerValue="Account # (Last 4 digits)"  rendered="{!achPay}">
+                    <div class="requiredInput">
+                        <div class="requiredBlock"></div>
+                        <apex:inputField value="{!p.txnObj.Account_Number_Last_4_Digits__c}">
+                        </apex:inputField>
+                    </div>
+                </apex:column>
+                <apex:column headerValue="Routing #"  rendered="{!achPay}">
+                    <div class="requiredInput">
+                        <div class="requiredBlock"></div>
+                        <apex:inputField value="{!p.txnObj.Routing_Number__c}">
+                        </apex:inputField>
+                    </div>
+                </apex:column>
+                <apex:column headerValue="Account Type"  rendered="{!achPay}">
+                    <div class="requiredInput">
+                        <div class="requiredBlock"></div>
+                        <apex:inputField value="{!p.txnObj.Account_Type__c}">
+                        </apex:inputField>
+                    </div>
+                </apex:column>
+                <apex:column headerValue="External Payment Trans. Code">
+                    <apex:inputField value="{!p.txnObj.External_Payment_Transaction_Code__c}">
+                    </apex:inputField>
+                </apex:column>
+                <apex:column headerValue="External Payment Auth. Code">
+                    <apex:inputField value="{!p.txnObj.External_Payment_Authorization_Code__c}">
+                    </apex:inputField>
+                </apex:column>
+            </apex:pageBlockTable>
+            <apex:commandButton status="WORKING" value="Add more" action="{!addMoreRows}" rendered="{!ccPay}"></apex:commandButton>
+            
+            Total Transactions : <apex:outputText id="totalTXN" value="test" label="Processor" />
+            &nbsp;&nbsp;&nbsp;&nbsp; Total Amount : $<apex:outputText id="totalAmt" value="test" label="Processor" />
+        </apex:pageBlock>
+        <apex:pageBlock id="Buttons1" >
+            <apex:pageBlockSection columns="1">
+                <apex:pageBlockSectionItem dataStyle="text-align: center;">
+                    <apex:commandButton status="WORKING" value="Save" action="{!save}" style=" width: 203px;height: 30px; color:white;background:#1797c0;"></apex:commandButton>
+                </apex:pageBlockSectionItem>
+            </apex:pageBlockSection>
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>

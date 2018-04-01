@@ -1,0 +1,17 @@
+<apex:page standardController="TXN__c" extensions="AdjustChargeController">
+  <script>
+      var eventId = '{!eventId}';
+      //alert('eventId====>'+eventId);
+      if(eventId != null && eventId != '') {
+        var proceedEvent = confirm("Please make your Adjustment from the Banquet \nDo you want to proceed to Event ?");
+        if(proceedEvent) {
+            window.parent.location="/{!eventId}";
+        }else {
+            window.parent.location="/{!transactionId}";
+        }
+      }else {
+        window.parent.location="/apex/{!$Setup.Data_Migration_Settings__c.Namespace_Prefix__c}TxnAdjustCharge?chargeid={!transactionId}"; 
+      }
+  </script>
+  
+</apex:page>

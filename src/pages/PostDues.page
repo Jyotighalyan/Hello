@@ -1,0 +1,245 @@
+<apex:page showHeader="true" sidebar="true" controller="PostDuesController">
+
+	<head>
+		<apex:includescript value="{!URLFOR($Resource.jqueryDatatable_3embed,'/3embed/jquery-1.11.1.min.js')}" />
+		<apex:includeScript value="{!URLFOR($Resource.jQuery_UI,'/jquery-ui-1.10.3.custom/js/jquery.dataTables.js')}"/>
+		<apex:stylesheet value="{!URLFOR($Resource.foretees, '/ProgressBar/progressbar.css')}"/>
+		<apex:stylesheet value="{!URLFOR($Resource.jqueryDatatable_3embed,'/3embed/jquery.dataTables.min.css')}" />
+		<apex:stylesheet value="{!URLFOR($Resource.fontawesome,'/css/font-awesome.css')}"/>
+	</head>
+	<br/>
+	<apex:outputLink id="link" styleClass="tooltip" value="/{!$Page.FinancialLandingPage}">Financial Landing Page </apex:outputLink>&nbsp; <i class="fa fa-angle-right" aria-hidden="true"></i>&nbsp; Post Dues Setup
+	<br/>
+	<br/>
+	<style>
+	#table{
+	    width:100%; 
+	    border-collapse:collapse; 
+    }
+	#table tr:hover {
+      	background-color:#f8f8f8;
+	}
+	</style>
+	<script>
+		var fields = ['Contact__r.Name', 'Contact__r.Customer_Id__c', 'Contact__r.Relationship__c', 'Contact__r.Membership_Type__c' ,'Amount__c','Tax_Amount__c','Total_Amount__c'];
+ 
+		var aoColumns = [];
+		for (var i = 0; i < fields.length; i++) {
+		    aoColumns.push({'mData': fields[i]});
+		}
+
+		function showDueDetailsOn(cb)
+		{
+			if(!($(cb).is(":checked")))
+			{
+				$('[id$=showDetails]').css('display','none');
+			}
+			else
+			{
+				$('[id$=showDetails]').css('display','block');
+			}
+		}
+
+		function commaSeparateNumber(val) {
+		    while (/(\d+)(\d{3})/.test(val.toString())) {
+		        val = val.toString().replace(/(\d+)(\d{3})/, '$1' + ',' + '$2');
+		    }
+		    return val;
+		}
+		
+	</script>
+	<apex:actionStatus id="WORKING">
+      <apex:facet name="start">
+          <div class="waitingSearchDiv" style="background-color: #000;
+              height: 100%;filter: alpha(opacity=50);opacity:0.5;width:100%;">
+          </div>
+          <div class="waitingSearchDiv" style="z-index:999;width:100%">
+              <div class="waitingHolder" style="z-index:999;top: 175px; left: 20px; width: 200px;height: 25px;background-color: #fff;border: 1px solid black;border-radius: 5px;padding-top: 10px;color: #000;">
+                  <span class="waitingDescription" style="color:#000;">Working...</span>
+                  <img class="waitingImage" src="/img/loading.gif" title="Please Wait..." />
+              </div>
+          </div>
+      </apex:facet>
+</apex:actionStatus>
+	<apex:pageBlock id="mainPage">
+		<apex:outputPanel rendered="{!IF(batchId!=null,true,false)}">
+			<c:BatchStatus bachId="{!batchId}" url="PostDues"/>
+		</apex:outputPanel>
+		 <script>
+			if('{!JSENCODE(HTMLENCODE(postReject))}'=='post' && '{!JSENCODE(HTMLENCODE(status))}'=='confirm' && '{!JSENCODE(HTMLENCODE(confirmDuePostings))}' != '')
+			{
+				$('[id$=postButton]').prop("disabled",true);
+				$('[id$=rejectButton]').prop("disabled",true);
+
+				if('{!isDuesToBePostedBlank}'=='true')
+				{
+					alert('Can\'t proceed. The dues selected are already posted for this billing period.');
+				}
+				else
+				{	
+					var dynaMessage = '';
+					if('{!JSENCODE(HTMLENCODE(confirmDuePostings))}'.includes(','))
+					{
+						dynaMessage = ' these due types are ';
+					}
+					else
+					{
+						dynaMessage = ' this due type is ';
+					}
+					if(confirm('Skipping {!JSENCODE(HTMLENCODE(confirmDuePostings))} from Posting as'+dynaMessage+'already posted for this billing period and year. Click ok to proceed with others.'))
+					{
+						$('[id$=postButton]').prop("disabled",true);
+						PostOrReject('post', 'post');
+					}
+					else
+					{
+						PostOrReject('', 'cancel');
+					}
+				}
+			}
+			else if('{!JSENCODE(HTMLENCODE(postReject))}'=='post' && '{!JSENCODE(HTMLENCODE(status))}'=='confirm')
+			{
+				$('[id$=postButton]').prop("disabled",true);
+				$('[id$=rejectButton]').prop("disabled",true);
+				PostOrReject('post', 'post');
+			}
+		</script>
+		<apex:form >
+			<apex:actionFunction status="WORKING" name="PostOrReject" action="{!PostRejectDues}" reRender="mainPage">
+				<apex:param name="postReject" value="" assignTo="{!postReject}"/>
+				<apex:param name="status" value="" assignTo="{!status}"/>
+			</apex:actionFunction>
+				<apex:pageMessages id="Msg"/>
+				<!-- HACK: Fake pbSection to inject the twistSection JS function -->
+            <apex:pageBlockSection title="Test" showHeader="true" rendered="false">
+                <apex:pageBlockSectionItem >
+                    <apex:outputText value="Label" />
+                    <apex:outputText value="Value" />
+                </apex:pageBlockSectionItem>
+            </apex:pageBlockSection>
+
+			<apex:outputPanel styleClass="head">
+			<apex:pageBlockSection collapsible="true" title="Available Generated Dues" columns="1">
+				<br/>
+				<apex:pageBlockSectionItem >
+					<apex:outputLabel value="Select Billing Period : "/>
+					<apex:outputPanel >
+						<apex:selectList value="{!selectedBillingMonth}" size="1">
+						<apex:actionSupport status="WORKING" event="onchange" action="{!renderPostDate}" reRender="postDates, dues, showDetails"/>
+							<apex:selectOptions value="{!billingMonthList}">
+							</apex:selectOptions>
+						</apex:selectList>
+					</apex:outputPanel>
+				</apex:pageBlockSectionItem>
+
+				<apex:pageBlockSectionItem >
+					<apex:outputLabel value="Post Dates : "/>
+					<apex:outputPanel id="postDates">
+						<apex:selectList value="{!selectedDueDate}" size="1">
+							<apex:actionSupport status="WORKING" event="onchange" action="{!renderDues}" reRender="dues, showDetails"/>
+							<apex:selectOptions value="{!dueDatesList}"/>
+						</apex:selectList>
+					</apex:outputPanel>	
+				</apex:pageBlockSectionItem>
+
+				<apex:pageBlockSectionItem >
+				 <apex:outputLabel value="Select Dues to be Posted/Rejected : "/>
+                 <apex:outputPanel layout="block" id="dues">
+                     <c:MultiselectPicklist leftLabel="Available Fees/Dues" 
+                         leftOption="{!unSelectedDues}"
+                         rightLabel="Fees/Dues to post"
+                         rightOption="{!selectedDuesListToBePosted}"
+                         size="10"
+                         width="200px"                                 
+                         /> 
+                <br/>                       
+                </apex:outputPanel>                             
+        		</apex:pageBlockSectionItem>
+
+        		<apex:pageBlockSection columns="1">
+        			<apex:outputPanel >
+        			<table width="100%;">
+        				<tr>
+        				<th style="width:50%;"></th>
+        				<th><apex:commandButton id="postButton" value="Post Dues" disabled="{!If(batchId!=null, true, false)}" onclick="PostOrReject('post','confirm'); return false"/></th>
+        				<th><apex:commandButton id="rejectButton" value="Reject Dues" disabled="{!If(batchId!=null, true, false)}" onclick="PostOrReject('Reject', 'Reject'); return false"/></th>
+        				<th style="width:50%;"></th>
+        				</tr>
+        			</table>
+        			</apex:outputPanel>
+        		</apex:pageBlockSection>
+        		
+        		<apex:pageBlockSectionItem >
+        			<apex:outputLabel value="Dues Detail : "/>
+        			<apex:inputCheckbox value="{!isShowDueChecked}" id="showDues" onchange="showDueDetailsOn(this);"/>
+        		</apex:pageBlockSectionItem>
+        		</apex:pageBlockSection>
+        		</apex:outputPanel>
+        		<br/>	
+        		<apex:outputPanel styleClass="head" id="showDetails">	
+        		<apex:pageBlockSection collapsible="true" title="Dues Detail For A Due Type" columns="1">
+        		<br/>
+        		<apex:pageBlockSectionItem >
+        			<apex:outputLabel value="Due Name : "/>
+        			<apex:outputPanel id="dueNames">
+	        			<apex:selectList value="{!dueIdToView}" size="1">
+		        			<apex:actionSupport status="WORKING" event="onchange" action="{!renderViewTable}" reRender="dueTable"/>
+		        			<apex:selectOptions value="{!allDuesToView}"/>
+	        			</apex:selectList>
+        			</apex:outputPanel>
+        		</apex:pageBlockSectionItem>
+
+        		<apex:pageBlockSectionItem >
+        			<apex:outputPanel id="dueTable">
+        				<table id="table" style="width: 100%;" cellpadding="0" cellspacing="0" border="0">
+						    <thead>	
+						        <th>Member Name</th>
+						        <th>Member Id</th>
+						        <th>Relationship</th>
+						        <th>Membership Type</th>
+						        <th>Amount ({!currencySymbol})</th>
+						        <th>Tax Amount ({!currencySymbol})</th>
+						        <th>Total Amount ({!currencySymbol})</th>
+						    </thead>
+						    <tbody>
+						    </tbody>
+						</table>
+						<script>
+
+							if('{!JSENCODE(HTMLENCODE(dueIdToView))}' != ''){
+							$.fn.dataTable.render.number( ',', '.', 2 );  //block alert                                     
+					        var table = $('#table').dataTable( {
+					            "processing": true,
+					            "serverSide": true,
+					            "ajax": "/apex/DataTableHelper?FromPage='Dues'&dueId={!JSENCODE(HTMLENCODE(dueIdToView))}&billingMonth={!JSENCODE(HTMLENCODE(selectedBillingMonth))}&dueDate={!JSENCODE(HTMLENCODE(selectedDueDate))}",
+					            "columns": aoColumns,
+					            "aoColumnDefs": [ {
+	      						"aTargets": [ 4,5,6 ],
+	    						"mRender": function (data, type, full) {
+	    							if(typeof data === "undefined")
+	    							{
+	    								return '0.00';
+	    							}
+	    							else
+	    							{
+	     								return parseFloat(data.toString()).toFixed(2).replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,");
+	     							}
+	   						}
+	   							} ],
+								fnRowCallback : function( nRow, Data, iDisplayIndex, iDisplayIndexFull ) { // this function is called for each row, but I could not use it to add the link
+	                  		      $('td:eq(0)', nRow).html('<a href="/'+Data.Contact__c+'" target="_blank">'+Data.Contact__r.Name+'</a>');
+	            				}
+					        } );
+					     }
+						</script>
+        			</apex:outputPanel>
+        		</apex:pageBlockSectionItem>
+        		<script>
+        			if('{!isShowDueChecked}'=='false')
+        			$('[id$=showDetails]').css('display','none');
+        		</script>
+    			</apex:pageBlockSection>
+    			</apex:outputPanel>
+		</apex:form>
+	</apex:pageBlock>
+</apex:page>

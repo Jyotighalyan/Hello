@@ -1,0 +1,313 @@
+<apex:page controller="TxnManualPaymentController"
+    docType="html-5.0"
+    standardStylesheets="true"
+    action="{!init}">
+    <head>
+        <apex:includescript value="{!URLFOR($Resource.jqueryDatatable_3embed,'/3embed/jquery-1.11.1.min.js')}" />
+        <apex:includescript value="{!URLFOR($Resource.jqueryDatatable_3embed,'/3embed/jquery.dataTables.min.js')}" />
+        <apex:includeScript value="{!URLFOR($Resource.jqueryui_custom,'/js/jquery-ui-1.10.4.custom.min.js')}"/>
+
+        <apex:stylesheet value="{!URLFOR($Resource.jqueryDatatable_3embed,'/3embed/jquery.dataTables.min.css')}" />
+        <apex:stylesheet value="{!URLFOR($Resource.jqueryui_custom, '/css/custom-theme/jquery-ui-1.10.4.custom.min.css')}"/>
+        <apex:stylesheet value="{!URLFOR($Resource.foretees, '/main.css')}"/>
+
+        <style>
+            @font-face {
+                font-family: 'foretees';
+                src: url("{!URLFOR($Resource.foretees, '/fonts/foretees.eot?qfsbxn')}");
+                src: url("{!URLFOR($Resource.foretees, '/fonts/foretees.eot?qfsbxn#iefix')}") format('embedded-opentype'),
+                     url("{!URLFOR($Resource.foretees, '/fonts/foretees.ttf?qfsbxn')}") format('truetype'),
+                     url("{!URLFOR($Resource.foretees, '/fonts/foretees.woff?qfsbxn')}") format('woff'),
+                     url("{!URLFOR($Resource.foretees, '/fonts/foretees.svg?qfsbxn#foretees')}") format('svg');
+                font-weight: normal;
+                font-style: normal;
+            }
+        .headerColor .pbSubheader{
+         background-color:#1797c0;
+        } 
+       
+        </style>
+    </head>
+
+   <!--  <apex:sectionHeader title="Transaction Manual Payment" subtitle="{!paramMemberName}" /> -->
+
+    <div class="address-breadcrumbs">
+        <a href="{!referrerURL}" class="address-breadcrumb">{!paramMemberName}</a>
+        <span class="address-breadcrumb-separator">&gt;</span>
+        <span class="address-breadcrumb-current">{!currentPageLabel}</span>
+    </div><!--/end .address-breadcrumbs-->
+
+    <div class="ft-container">
+        <apex:pageMessages rendered="true" id="msgs"></apex:pageMessages>
+        <apex:pageBlock id="PAYMENTBLOCK">
+        <apex:outputPanel styleClass="headerColor">
+        <apex:pageBlockSection title="{!dynamicContent}">
+            <apex:form id="paymentForm">              
+                <apex:actionstatus id="loading">
+                    <apex:facet name="stop"></apex:facet>
+                    <apex:facet name="start">
+                        <div class="waitingSearchDiv" id="el_loading">
+                            <div class="waitingHolder">
+                                <img class="waitingImage" src="/img/loading.gif" title="Please Wait..." />
+                                <span class="waitingDescription">Working...</span>
+                            </div>
+                        </div>
+                    </apex:facet>
+                </apex:actionstatus>                
+                <fieldset class="fields-payment fields-inline">                   
+                    <!--Type-->
+                    <!-- TODO: add event
+                            onchange="show_payment_method(this)" -->
+                    <div class="form-group">
+                        <apex:outputlabel for="record-type-from-db" value="Type:" />
+                        <apex:selectList value="{!selectedValue}"
+                            size="1"
+                            disabled="{!isDetailPage}"
+                            id="record-type-from-db">
+                            <apex:selectOptions value="{!recordTypeOptions}"/>
+                        </apex:selectList>
+                    </div>
+
+                    <!--Amount-->
+                    <apex:outputPanel layout="block" rendered="{!if(paramReservationId == null, false, true)}">
+                        <div class="form-group">
+                            <apex:outputlabel for="deposit-amount" value="Deposit Amount:" />
+                            <apex:inputField id="deposit-amount" value="{!eventDeposit.Deposit_Amount__c}"/>
+                        </div>
+                    </apex:outputPanel>
+
+                    <apex:outputPanel layout="block" rendered="{!if(paramReservationId != null, false, true)}">
+                        <div class="form-group">
+                            <apex:outputlabel for="payment-amount" value="Amount:" />
+                            <apex:outputPanel >
+                                <div class="requiredInput">
+                                    <div class="requiredBlock"></div>
+                                    <apex:inputText value="{!paymentAmount}"
+                                        id="paymentAmount"
+                                        onkeyup="ManualPayment.calculateAccountBalance(this)" />
+                                    <a id="reFundButton"
+                                        target='_new'
+                                        href='/apex/TxnRefund?from=MemberPayment&amp;ContactType=member&amp;PaymentId={!paramPaymentId}'
+                                        style="display: none;">
+                                        <button type="button" id="Refund">
+                                            Refund Amount
+                                        </button>
+                                    </a>
+                                </div>
+                            </apex:outputPanel>
+                        </div>
+                    </apex:outputPanel>
+
+                    <!--Payment-->
+                    <div class="payment-method" id="payment-block">
+                        <!--Select payment type-->
+                        <div class="form-group">
+                            <apex:outputlabel styleClass="payment-method" for="payment-types" value="Select Payment Type:" />
+                            <apex:outputPanel id="pmethod">
+                                <div class="requiredInput">
+                                    <div class="requiredBlock"></div>
+                                    <apex:selectList value="{!paymentType}"
+                                        id="payment-types"
+                                        size="1"
+                                        onchange="ManualPayment.togglePaymentMethod(this)"
+                                        disabled="{!isDetailPage}" >
+                                        <apex:selectOption itemValue="" itemLabel="Select Payment Method"></apex:selectOption>
+                                        <apex:selectOption itemValue="Cash" itemLabel="Cash"></apex:selectOption>
+                                        <apex:selectOption itemValue="Check" itemLabel="Check"></apex:selectOption>
+                                        <apex:selectOption itemValue="CreditCard" itemLabel="Credit Card"></apex:selectOption>
+                                        <apex:selectOption itemValue="ACH" itemLabel="ACH"></apex:selectOption>
+                                    </apex:selectList>
+                                </div>
+                            </apex:outputPanel>
+                        </div>
+
+                        <!--Toggle Payment Types-->
+                        <div class="js-payment-method" id="section-check" style="display:none">
+                            <div class="form-group">
+                                <apex:outputLabel for="check-number">Check Number:</apex:outputLabel>
+                                <apex:outputPanel >
+                                    <div class="requiredInput">
+                                        <div class="requiredBlock"></div>
+                                        <apex:inputField id="check-number" value="{!othCharge.Check_Number__c}" required="false" />
+                                    </div>
+                                </apex:outputPanel>
+                            </div>
+                            <div class="form-group">
+                                <apex:outputLabel for="check-name">Name on Check:</apex:outputLabel>
+                                <apex:outputPanel >
+                                    <div class="requiredInput">
+                                        <div class="requiredBlock"></div>
+                                        <apex:inputField id="check-name" value="{!othCharge.Name_on_Check__c}" required="false" />
+                                    </div>
+                                </apex:outputPanel>
+                            </div>
+                            <div class="form-group">
+                                <apex:outputLabel for="check-date">Check Date:</apex:outputLabel>
+                                <apex:outputPanel >
+                                    <div class="requiredInput">
+                                        <div class="requiredBlock"></div>
+                                        <apex:inputField id="check-date" value="{!othCharge.Check_Date__c}" required="false" />
+                                    </div>
+                                </apex:outputPanel>
+                            </div>
+                        </div>
+
+                        <div class="js-payment-method" id="section-credit-card" style="display:none">
+                            <div class="form-group">
+                                <apex:outputLabel for="cardholder-name">Cardholder Name:</apex:outputLabel>
+                                <apex:outputPanel >
+                                    <div class="requiredInput">
+                                        <div class="requiredBlock"></div>
+                                        <apex:inputField value="{!othCharge.Cardholder_Name__c}" id="cardholder-name"></apex:inputField>
+                                    </div>
+                                </apex:outputPanel>
+                            </div>
+                            <div class="form-group">
+                                <apex:outputLabel for="card-type">Card Type:</apex:outputLabel>
+                                <apex:outputPanel >
+                                    <div class="requiredInput">
+                                        <div class="requiredBlock"></div>
+                                        <apex:inputField value="{!othCharge.Card_Type__c}" id="card-type"></apex:inputField>
+                                    </div>
+                                </apex:outputPanel>
+                            </div>
+                            <div class="form-group">
+                                <apex:outputLabel for="cc-last-four-digits">Last 4 Digits of Card:</apex:outputLabel>
+                                <apex:outputPanel >
+                                    <div class="requiredInput">
+                                        <div class="requiredBlock"></div>
+                                        <apex:inputField styleClass="last-four"
+                                            value="{!othCharge.Card_Last_4_Digits__c}"
+                                            required="false"
+                                            id="cc-last-four-digits"
+                                            onkeyup="ManualPayment.enforceCharLimit(this, 4)"/>
+                                    </div>
+                                </apex:outputPanel>
+                            </div>
+                            <div class="form-group">
+                                <apex:outputLabel for="ep-transaction-code">External Payment Transaction Code:</apex:outputLabel>
+                                <apex:outputPanel >
+                                    <apex:inputField value="{!othCharge.External_Payment_Transaction_Code__c}" required="false" id="ep-transaction-code"/>
+                                </apex:outputPanel>
+                            </div>
+                            <div class="form-group">
+                                <apex:outputLabel for="ep-authorization-code">External Payment Authorization Code:</apex:outputLabel>
+                                <apex:outputPanel >
+                                    <apex:inputField value="{!othCharge.External_Payment_Authorization_Code__c}" id="ep-authorization-code"/>
+                                </apex:outputPanel>
+                            </div>
+                        </div>
+                        <div class="js-payment-method" id="section-ach" style="display:none">
+                            <div class="form-group">
+                                <apex:outputLabel for="ach-bank-name">Bank Name:</apex:outputLabel>
+                                <apex:outputPanel >
+                                    <div class="requiredInput">
+                                        <div class="requiredBlock"></div>
+                                        <apex:inputField value="{!othCharge.Bank_Name__c}" required="false" id="ach-bank-name"/>
+                                    </div>
+                                </apex:outputPanel>
+                            </div>
+                            <div class="form-group">
+                                <apex:outputLabel for="ach-routing-number">Routing Number:</apex:outputLabel>
+                                <apex:outputPanel >
+                                    <div class="requiredInput">
+                                        <div class="requiredBlock"></div>
+                                        <apex:inputField value="{!othCharge.Routing_Number__c}" required="false" id="ach-routing-number"/>
+                                    </div>
+                                </apex:outputPanel>
+                            </div>
+                            <div class="form-group">
+                                <apex:outputlabel styleClass="ach-account-type" for="ach-account-type" value="Account Type:" />
+                                <apex:outputPanel >
+                                    <div class="requiredInput">
+                                        <div class="requiredBlock"></div>
+                                        <apex:inputField id="ach-account-type" value="{!othCharge.Account_Type__c}"></apex:inputField>
+                                    </div>
+                                </apex:outputPanel>
+                            </div>
+                            <div class="form-group">
+                                <apex:outputLabel for="ach-last-four-digits">Account Number (last 4 digits):</apex:outputLabel>
+                                <apex:outputPanel >
+                                    <div class="requiredInput">
+                                        <div class="requiredBlock"></div>
+                                        <apex:inputField styleClass="last-four"
+                                            value="{!othCharge.Account_Number_Last_4_Digits__c}"
+                                            required="false"
+                                            id="ach-last-four-digits"
+                                            onkeyup="ManualPayment.enforceCharLimit(this, 4)"/>
+                                    </div>
+                                </apex:outputPanel>
+                            </div>
+                            <div class="form-group">
+                                <apex:outputLabel for="ach-transaction-code">External Payment Transaction Code:</apex:outputLabel>
+                                <apex:outputPanel >
+                                    <apex:inputField value="{!othCharge.External_Payment_Transaction_Code__c}" required="false" id="ach-transaction-code"/>
+                                </apex:outputPanel>
+                            </div>
+                            <div class="form-group">
+                                <apex:outputLabel for="ach-authorization-code">External Payment Authorization Code:</apex:outputLabel>
+                                <apex:outputPanel >
+                                    <apex:inputField value="{!othCharge.External_Payment_Authorization_Code__c}" id="ach-authorization-code"/>
+                                </apex:outputPanel>
+                            </div>
+                            <div class="form-group">
+                                <apex:outputLabel for="ach-account-name">Name on Account:</apex:outputLabel>
+                                <apex:outputPanel >
+                                    <div class="requiredInput">
+                                        <div class="requiredBlock"></div>
+                                        <apex:inputField value="{!othCharge.Name_on_Account__c}" required="false" id="ach-account-name"/>
+                                    </div>
+                                </apex:outputPanel>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!--Date-->
+                    <div class="form-group">
+                        <apex:outputLabel for="payment-date" value="Payment Date:"/>
+                        <apex:outputPanel >
+                            <div class="requiredInput">
+                                <div class="requiredBlock"></div>
+                                <apex:inputField value="{!othCharge.Date__c}" id="payment-date" />
+                            </div>
+                        </apex:outputPanel>
+                    </div>
+
+                    <!--Description-->
+                    <div class="form-group">
+                        <apex:outputlabel styleClass="label-textarea" for="description" value="Description:" />
+                        <apex:outputPanel >
+                            <apex:inputField value="{!othCharge.Description__c}" id="description"/>
+                        </apex:outputPanel>
+                    </div>
+
+                    <!--Statement Description-->
+                    <div class="form-group">
+                        <apex:outputlabel styleClass="label-textarea" for="statement-description" value="Statement Description:" />
+                        <apex:outputPanel >
+                            <div class="requiredInput">
+                                <div class="requiredBlock"></div>
+                                <apex:inputField value="{!othCharge.Statement_Description__c}" id="statement-description"/>
+                            </div>
+                        </apex:outputPanel>
+                    </div>
+                </fieldset>
+
+                <apex:actionFunction name="paraFunction" status="loading" action="{!save}" rerender="msgs">
+                    <apex:param id="anode" name="node" value="" />
+                </apex:actionFunction>
+
+                <apex:commandButton id="btn"
+                    status="loading"
+                    onclick="ManualPayment.doSave(event);"
+                    value="Post Payment" style="color:white;background:#1797c0;"/>
+                    <apex:commandButton value="Back to Event" action="{!cancelAction}" rendered="{!if(paramReservationId == null, false, true)}" style="color:white;background:#1797c0;"/>
+                      <apex:commandButton value="Cancel" action="{!cancelAction}" rendered="{!if(paramReservationId == null, true, false)}" style="color:white;background:#1797c0;"/>
+            </apex:form>
+            </apex:pageBlockSection>
+            </apex:outputPanel>
+        </apex:pageBlock>
+    </div>
+
+    <script src="{!URLFOR($Resource.foretees, '/txn-manual-payment.js')}"></script>
+</apex:page>

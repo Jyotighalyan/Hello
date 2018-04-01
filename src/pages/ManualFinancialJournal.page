@@ -1,0 +1,365 @@
+<apex:page standardController="Financial_Journal_Line__c" extensions="ManualFinancialJournalController">
+    <!-- Scripts -->
+    <apex:includeScript value="{!URLFOR($Resource.jQuery_UI,'/jquery-ui-1.10.3.custom/js/jquery-3.2.1.min.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.jQuery_UI,'/jquery-ui-1.10.3.custom/js/jquery-ui-1.10.3.custom.min.js')}"/>
+
+    <apex:includeScript value="{!URLFOR($Resource.jQuery_UI,'/jquery-ui-1.10.3.custom/js/jquery.dataTables.js')}"/>   
+
+    <!-- Stylings -->
+    <apex:stylesheet value="{!URLFOR($Resource.jQuery_UI, '/jquery-ui-1.10.3.custom/css/ui-lightness/jquery-ui-1.10.3.custom.min.css')}"/>
+
+    <head>
+
+
+        <!--Custom javascript functions-->
+        <script type="text/javascript">    
+            var lastDescription = "";
+            
+            //Get and set previously entered description
+            function getLastDescription(description){
+                if(description!='')
+                {
+                    lastDescription=description;                              
+                }
+                return lastDescription;   
+            }
+            
+            function setLastDescription(text){                
+                lastDescription=text;
+            }  
+
+            //currency format function
+            function formatCurrency(inputBox){             
+                if(inputBox){
+                    inputBox.val(inputBox.val().replace(/,/g,''));
+                    if($.isNumeric(inputBox.val())){                       
+                        var input = parseFloat(inputBox.val());                    
+                        input = input.toFixed(2).replace(/./g, function(c, i, a) {                      
+                        return i && c !== "." && !((a.length - i) % 3) ? ',' + c : c;
+                        });                   
+                        return input;
+                    } else {
+                        return null;
+                    }
+                }
+            }
+
+            function confirmDelete(journalId)
+            {               
+                if(confirm('Are you sure you want to delete this entry?'))
+                {            
+                    deleteJournal(journalId);
+                }
+            }
+        
+        </script>           
+    </head>
+
+    <!--Manual journal entry creation-->
+    <apex:form id="theForm">    
+        <!--Working pop up window-->
+        <apex:actionStatus id="WORKING" >
+            <apex:facet name="start">
+                <div class="waitingSearchDiv" style="background-color: #000;
+                       height: 100%;filter: alpha(opacity=50);opacity:0.5;width:100%;">
+                </div>
+                <div class="waitingSearchDiv" style="z-index:999;width:100%">
+                    <div class="waitingHolder" style="z-index:999;top: 175px; left: 20px; width: 200px;height: 25px;background-color: #fff;border: 1px solid black;border-radius: 5px;padding-top: 10px;color: #000;">
+                        <span class="waitingDescription" style="color:#000;">Working...</span>
+                        <img class="waitingImage" src="/img/loading.gif" title="Please Wait..." />
+                    </div>
+                </div>
+            </apex:facet>
+        </apex:actionstatus>
+
+        <!--Page level messages-->
+        <apex:outputPanel id="MESSAGES">          
+            <apex:pageMessages />
+        </apex:outputPanel>
+
+      <!--Filter critearea and post journal entry start section-->
+       <apex:pageBlock title="Financial Journal Entries">
+            <apex:pageBlockSection >
+                <apex:pageBlockSectionItem >
+                <apex:outputLabel >Start Date</apex:outputLabel>
+                <apex:inputField value="{!searchDateOS.Post_Date__c}"/>
+                </apex:pageBlockSectionItem>
+               
+                <apex:pageBlockSectionItem >
+                <apex:outputLabel >End Date</apex:outputLabel>
+                <apex:inputField value="{!searchDateOE.Post_Date__c}"/> 
+                </apex:pageBlockSectionItem>              
+
+                <apex:pageBlockSectionItem >
+                <apex:outputLabel >Posted</apex:outputLabel>
+                <apex:inputCheckbox value="{!searchPosted}"/>
+                </apex:pageBlockSectionItem>
+
+                <apex:pageBlockSectionItem >
+                <apex:outputLabel >Unposted</apex:outputLabel>
+                <apex:inputCheckbox value="{!searchUnPosted}"/>
+                </apex:pageBlockSectionItem>
+
+                <apex:pageBlockSectionItem >                 
+                <apex:commandButton status="WORKING" value="Search Manual Journals" action="{!loadEntries}" reRender="theForm"/>
+                </apex:pageBlockSectionItem>
+                </apex:pageBlockSection>            
+            <br/>           
+        </apex:pageBlock>
+    <!--Filter critearea end here-->
+
+      <!--Existing journal entries currently all-->
+      <apex:pageBlock title="Existing Journal Entries" rendered="{!manualEntries.size>0}" id="EXISTINGBLOCK">
+
+            <!-- ActionFunction used in the page-->
+        <apex:actionFunction name="deleteJournal" action="{!delSelFJE}" reRender="theForm">
+            <apex:param name="p1" value="" assignTo="{!cSelDelId}"/>     
+        </apex:actionFunction>      
+        
+            <apex:pageBlockSection title="Journal Entries" collapsible="false" columns="1">           
+                <apex:commandButton status="WORKING" value="Post Manual Journals" action="{!postFJE}" reRender="theForm"/>
+                <!--Display table containing existing manual journal entries-->
+                <apex:pageBlockTable value="{!manualEntries}" var="me" id="entryTable">
+                    
+                    <apex:column headerValue="Action">
+                        <apex:commandLink status="WORKING" action="{!setSelFJE}" value="Select" rerender="EXISTINGBLOCK">
+                            <apex:param name="p1" value="{!me.fje.id}" assignTo="{!cSelId}"/>
+                        </apex:commandLink>|
+                                                
+                    <apex:commandLink status="WORKING" onclick="confirmDelete('{!JSENCODE(me.fje.id)}'); return false;" value="Del" rendered="{!me.fje.Posted__c==false}">
+                        </apex:commandLink>                      
+                    </apex:column>
+                    
+                    <apex:column headerValue="Post">
+                        <apex:inputCheckbox value="{!me.post}" rendered="{!me.fje.Posted__c=false && me.debitTotal-me.crdtotal=0}" disabled="{!me.totalAmount!=0}"></apex:inputCheckbox>
+                        <apex:outputText value="Out of Balance!" style="color: #FF0000;" rendered="{!me.debitTotal-me.crdtotal!=0}"/>
+                    </apex:column>
+                    
+                    <apex:column headerValue="Financial Journal Entry"><apex:outputLink value="/{!me.fje.id}">{!me.fje.Name}</apex:outputLink></apex:column>
+                    
+                    <apex:column value="{!me.fje.Posted__c}"></apex:column>
+                    <apex:column value="{!me.fje.Post_Date__c}"></apex:column>
+                    <apex:column headerValue="Entry Date"><apex:outputField value="{!me.fje.Entry_Date__c}"></apex:outputField></apex:column>
+                    <apex:column headerValue="Reference"><apex:outputField value="{!me.fje.Reference__c}"></apex:outputField></apex:column>
+                    
+                    <apex:column headerValue="Debit">
+                        <apex:outputText value="${0,number,###,###,###,##0.00}"><apex:param value="{!me.debitTotal}"></apex:param></apex:outputText>
+                        <apex:facet name="footer">
+                        <apex:outputText value="Total Debit: ${0, number, ###,##0.00}">
+                        <apex:param value="{!TBDebit}"/>
+                        </apex:outputText>                     
+                        </apex:facet>
+                    </apex:column>
+
+                    <apex:column headerValue="Credit">
+                        <apex:outputText value="${0,number,###,###,###,##0.00}"><apex:param value="{!me.crdtotal}"></apex:param></apex:outputText>
+                        <apex:facet name="footer">
+                             <apex:outputText value="Total Credit: ${0, number, ###,##0.00}">
+                        <apex:param value="{!TBCredit}"/>
+                        </apex:outputText>               
+                    </apex:facet>
+                    </apex:column>
+                    
+                    <apex:column width="40px" headerValue="Balance">
+                        <apex:outputText value="${!me.TotalAmount}"/>
+                        <apex:facet name="footer">
+                         <apex:outputText value="Total Balance: ${0, number, ###,##0.00}">
+                            <apex:param value="{!TBTotal}"/>
+                        </apex:outputText>                                    
+                        </apex:facet>
+                    </apex:column>
+
+                </apex:pageBlockTable>               
+            </apex:pageBlockSection>
+
+    <!--Edit existing financial journal entries section-->
+    <apex:pageBlockSection title="Details for - {!selectedMe.fje.Name}" rendered="{!selectedME!=null}"  collapsible="false" columns="2">       
+
+                <apex:outputText value=" "></apex:outputText>
+                <apex:commandLink style="float:right;" value="Close Section" action="{!closeSelectedME}" reRender="EXISTINGBLOCK"></apex:commandLink>     
+
+                <apex:inputField value="{!selectedME.fje.Entry_Date__c}" rendered="{!selectedME.fje.Posted__c=false}">
+               </apex:inputField>
+                
+                <apex:inputField value="{!selectedME.fje.Reference__c}" rendered="{!selectedME.fje.Posted__c=false}" label="Reference"></apex:inputField>
+               
+               <apex:inputField value="{!selectedME.fje.Notes__c}" rendered="{!selectedME.fje.Posted__c=false}" style="height: 100%; width: 100%"></apex:inputField>
+
+                <apex:inputField value="{!selectedME.fje.Description__c}" rendered="{!selectedME.fje.Posted__c=false}" label="Description"></apex:inputField>             
+            </apex:pageBlockSection>
+            
+            <apex:pageBlockSection collapsible="false" columns="1" rendered="{!selectedME!=null}">
+                <apex:pageBlockTable value="{!selectedMe.JournalList}" var="mejl" rendered="{!selectedME.JournalList.size>0}" id="EXISTINGLINES">
+                    <apex:column >
+                        <apex:commandLink status="WORKING" action="{!delFJL}" value="Del" rerender="EXISTINGBLOCK" rendered="{!selectedME.fje.Posted__c==false}">
+                            <apex:param name="fjeId" value="{!selectedMe.fje.Id}" assignTo="{!fjeId}"/>
+                            <apex:param name="fjlId" value="{!mejl.fjl.id}" assignTo="{!fjlId}"/>
+                        </apex:commandLink>
+                    </apex:column>
+
+                    <apex:column headerValue="Financial Journal Line"><apex:outputLink value="/{!mejl.fjl.id}">{!mejl.fjl.Name}</apex:outputLink></apex:column>
+
+                    <apex:column headerValue="Financial Account">
+                        <apex:outputPanel rendered="{!selectedME.fje.Posted__c=false}">
+                            <apex:inputField styleClass="manEntryEDSearch{!mejl.index}" value="{!mejl.fjl.Financial_Account__c}"></apex:inputField>                            
+                        </apex:outputPanel>
+                        <apex:outputField value="{!mejl.fjl.Financial_Account__c}" rendered="{!selectedMe.fje.Posted__c=true}"></apex:outputField>
+                    </apex:column>
+
+                    <apex:column headerValue="Description">
+                        <apex:inputField value="{!mejl.fjl.Description__c}" rendered="{!selectedME.fje.Posted__c=false}" onBlur="setLastDescription($(this).val());" onFocus="$(this).val(getLastDescription($(this).val()));"></apex:inputField>
+                        <apex:outputField value="{!mejl.fjl.Description__c}" rendered="{!selectedME.fje.Posted__c=true}"></apex:outputField>
+                    </apex:column>
+                    
+                    <apex:column headerValue="Debit">
+                        <apex:inputText value="{!mejl.debit}" rendered="{!selectedME.fje.Posted__c=false}" onBlur="$(this).val(formatCurrency($(this)));" onchange="calDebCredTotalMEJLAF();"></apex:inputText>
+                        <apex:outputText value="{!mejl.debit}" rendered="{!selectedME.fje.Posted__c=true}"></apex:outputText>
+                    </apex:column>
+                    
+                    <apex:column headerValue="Credit">
+                        <apex:inputText value="{!mejl.linecrd}" rendered="{!selectedME.fje.Posted__c=false}" onBlur="$(this).val(formatCurrency($(this)));" onchange="calDebCredTotalMEJLAF();"></apex:inputText>
+                        <apex:outputText value="{!mejl.linecrd}" rendered="{!selectedME.fje.Posted__c=true}"></apex:outputText>
+                    </apex:column>
+                </apex:pageBlockTable>
+                
+                <apex:pageBlockSection id="totalsPBSMEJL" columns="1" rendered="{!selectedME!=null}">
+                    <apex:outputPanel >
+
+                        <b style="padding-left:60%;">Total Debit:</b>&nbsp;&nbsp;
+                        <apex:outputText value="${0, number, ###,##0.00}">
+                        <apex:param value="{!mjelDebitTotal}" />
+                        </apex:outputText>
+
+                        <b style="padding-left:6%;">Total Credit:</b>&nbsp;&nbsp;
+                        <apex:outputText value="${0, number, ###,##0.00}">
+                          <apex:param value="{!mjelCreditTotal}" />
+                        </apex:outputText><br/>
+
+                        <b style="padding-left:70%;">Journal Balance:</b>&nbsp;&nbsp;
+                        <apex:outputText value="${0, number, ###,##0.00}">
+                          <apex:param value="{!mjelTotalAmount}" />
+                        </apex:outputText>
+                    </apex:outputPanel>
+                </apex:pageBlockSection>
+
+                <apex:commandButton value="Add 10" action="{!addNewExistingLines}" reRender="EXISTINGLINES,EXISTINGLINES2" rendered="{!selectedMe.fje.Posted__c=false}">
+                    <apex:param assignTo="{!numberLinesToAdd}" name="p1" value="10"></apex:param>
+                </apex:commandButton>
+
+                 <apex:commandButton status="WORKING" value="Save Journal Entry" action="{!updateEntry}" reRender="theForm" rendered="{!selectedME.fje.Posted__c=false}"></apex:commandButton>   
+
+            </apex:pageBlockSection>
+            </apex:pageBlock>
+       
+      <!--Recurring journal entry load and post it-->
+      <apex:pageBlock title="Recurring Journal Entries">
+        <apex:pageBlockSection columns="2">      
+        <apex:inputField value="{!recurringEntry.Recurring_Journal_Frequency__c}" label="Frequency">
+            <apex:actionSupport status="WORKING" event="onchange" action="{!loadTemplates}" reRender="Template"/>
+        </apex:inputField>       
+            
+        <apex:outputPanel id="Template">
+        <apex:outputPanel rendered="{!availableTemplates!=null && availableTemplates.size>0}">
+        <apex:outputLabel >Template&nbsp;&nbsp;</apex:outputLabel>
+        <apex:selectList value="{!selectedTemplate}" label="Templates" size="1">
+            <apex:selectOptions value="{!availableTemplates}"/>           
+        </apex:selectList> 
+        &nbsp;&nbsp;
+        <apex:commandButton value="Load Recurring Entry" action="{!setRecurringEntry}" reRender="theForm"/>
+        </apex:outputPanel>    
+        </apex:outputPanel>
+
+        </apex:pageBlockSection>
+      </apex:pageBlock>
+
+      <!--Create new financial journal entries section-->
+      <apex:pageBlock title="Create New  Financial Journal Entry">
+            <apex:outputPanel id="NEWENTRYMESSAGES">
+            </apex:outputPanel>
+            <apex:pageBlockSection title="Journal Entry Details" collapsible="false">
+                <apex:inputField value="{!manEntry.fje.Entry_Date__c}" rendered="true">
+                </apex:inputField>         
+                <apex:inputField value="{!manEntry.fje.Reference__c}" label="Reference"></apex:inputField>
+                <apex:inputField value="{!manEntry.fje.Notes__c}" style="height: 100%;width: 100%;"></apex:inputField>
+
+                 <apex:inputField value="{!manEntry.fje.Description__c}"></apex:inputField>
+            </apex:pageBlockSection>
+
+            <!--Manual journal entry 10 lines at a time section-->
+               <apex:pageBlockSection title="Journal Lines" columns="1">
+                <apex:pageBlockTable id="MJLTABLE" value="{!manEntry.JournalList}" var="mjl" rendered="{!manEntry.JournalList.size>0}">
+                    
+                    <apex:column >
+                        <apex:image id="theImage" value="/img/msg_icons/error16.png" rendered="{!mjl.isError = true}"/>
+                    </apex:column>
+                    
+                    <apex:column headerValue="Financial Account" headerClass="clsCenter">
+                        <apex:outputPanel >
+                            <apex:outputText rendered="{!IF(mjl.index=0,true,false)}"></apex:outputText>
+                            <apex:inputField styleClass="manEntrySearch{!mjl.index}" value="{!mjl.fjl.Financial_Account__c}"/>
+                        </apex:outputPanel>
+                    </apex:column>
+                    
+                    <apex:column headerValue="Description" headerClass="clsCenter">
+                        <apex:outputText rendered="{!IF(mjl.index=0,true,false)}"></apex:outputText>
+                        <apex:inputField value="{!mjl.fjl.Description__c}" onBlur="setLastDescription($(this).val());" onFocus="$(this).val(getLastDescription($(this).val()));"></apex:inputField>
+                    </apex:column>
+                    
+                    <apex:column headerValue="Debit" headerClass="clsCenter">                        
+                        <apex:inputText style="width: -moz-available;" value="{!mjl.debit}" onBlur="$(this).val(formatCurrency($(this)));" onchange="calDebCredTotalAF();"></apex:inputText>
+                    </apex:column>
+                    
+                    <apex:column headerValue="Credit" headerClass="clsCenter">
+                        <apex:inputText style="width: -moz-available;" value="{!mjl.linecrd}" onBlur="$(this).val(formatCurrency($(this)));" onchange="calDebCredTotalAF();"></apex:inputText>
+                    </apex:column>
+                </apex:pageBlockTable>
+
+                <!--Total section for credit debit and total amount down to the grid-->
+                <apex:pageBlockSection id="totalsPBS" columns="1">
+                    <apex:outputPanel >
+                        <b style="padding-left:52%;">Total Debit:</b>&nbsp;&nbsp;
+                        <apex:outputText value="${0, number, ###,##0.00}">
+                        <apex:param value="{!mjeDebitTotal}"/>
+                        </apex:outputText>
+
+                        <b style="padding-left:13%;">Total Credit:</b>&nbsp;&nbsp;
+                        <apex:outputText value="${0, number, ###,##0.00}">
+                        <apex:param value="{!mjeCreditTotal}"/>
+                        </apex:outputText><br/>
+
+                        <b style="padding-left:63%;">Journal Balance:</b>&nbsp;&nbsp;
+                       <apex:outputText value="${0, number, ###,##0.00}">
+                        <apex:param value="{!mjeTotalAmount}"/>
+                        </apex:outputText>
+                    </apex:outputPanel>
+                </apex:pageBlockSection>
+
+                <!--Button to add to empty rows in grid-->
+                <apex:commandButton value="Add 10" action="{!addNewEntryLines}" reRender="MJLTABLE,MJLTABLE2">
+                    <apex:param assignTo="{!numberLinesToAdd}" name="p1" value="10"></apex:param>
+                </apex:commandButton>
+
+                <!--Button to save financial journals grid to the object-->
+                <apex:outputPanel >
+                <apex:commandButton status="WORKING" value="Save Journal Entry" action="{!addNewEntry}" reRender="theForm"></apex:commandButton>
+
+                 <apex:commandButton status="WORKING" value="Cancel" action="{!clearEntry}" reRender="theForm"></apex:commandButton>
+                 </apex:outputPanel>
+
+            </apex:pageBlockSection>            
+      </apex:pageBlock>
+
+    <apex:actionFunction name="calDebCredTotalAF" action="{!calDebCredTotal}" reRender="totCrdtOP,totDbtOP,totalsPBS"/>
+      
+      <apex:actionFunction name="calDebCredTotalMEJLAF" action="{!calDebCredTotalMEJL}" reRender="totCrdtOP,totDbtOP,totalsPBSMEJL"/>
+
+     <script>       
+           $('[id$="entryTable"]').DataTable({
+             "searching": false,
+                "paging":false,
+                "destroy" : true,
+                "autoWidth" : false});       
+    </script>
+
+     </apex:form>
+</apex:page>

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <customSettingsType>List</customSettingsType>
+    <description>used to store last effective date of APAgingBatch</description>
+    <enableFeeds>false</enableFeeds>
+    <fields>
+        <fullName>Effective_Date__c</fullName>
+        <defaultValue>TODAY()</defaultValue>
+        <externalId>false</externalId>
+        <label>Effective Date</label>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>Date</type>
+    </fields>
+    <fields>
+        <fullName>Last_Generate_Due_Batch_Run_Date__c</fullName>
+        <description>represents last run date of generate due batch</description>
+        <externalId>false</externalId>
+        <label>Last Generate Due Batch Run</label>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>Date</type>
+    </fields>
+    <fields>
+        <fullName>Last_Generate_Due_Billing_Period__c</fullName>
+        <description>used to store the last generate due billing period</description>
+        <externalId>false</externalId>
+        <label>Last Generate Due Billing Period</label>
+        <length>255</length>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>Text</type>
+        <unique>false</unique>
+    </fields>
+    <fields>
+        <fullName>Last_Run_Of_Member_Aging__c</fullName>
+        <description>stores the date of the last run of the member aging batch</description>
+        <externalId>false</externalId>
+        <label>Last Run Of Member Aging</label>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>Date</type>
+    </fields>
+    <label>AP Aging</label>
+    <visibility>Public</visibility>
+</CustomObject>

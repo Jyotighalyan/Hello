@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <customSettingsType>Hierarchy</customSettingsType>
+    <enableFeeds>false</enableFeeds>
+    <fields>
+        <fullName>BEO_Terms_Conditions_Effective_Date__c</fullName>
+        <description>This is the effective date for the Terms and Conditions for Private Banquet Rooms</description>
+        <externalId>false</externalId>
+        <label>BEO Terms Conditions Effective Date</label>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>Date</type>
+    </fields>
+    <fields>
+        <fullName>BEO_Terms_Conditions_Title__c</fullName>
+        <description>This is the Title of the Terms and Conditions for use of Private Banquet Rooms</description>
+        <externalId>false</externalId>
+        <label>BEO Terms Conditions Title</label>
+        <length>255</length>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>Text</type>
+        <unique>false</unique>
+    </fields>
+    <fields>
+        <fullName>Banquet_Booking_Limit__c</fullName>
+        <defaultValue>false</defaultValue>
+        <externalId>false</externalId>
+        <label>Banquet Booking Limit?</label>
+        <trackTrending>false</trackTrending>
+        <type>Checkbox</type>
+    </fields>
+    <fields>
+        <fullName>Banquet_Email__c</fullName>
+        <externalId>false</externalId>
+        <label>Banquet Email</label>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>Email</type>
+        <unique>false</unique>
+    </fields>
+    <fields>
+        <fullName>Deposit_Percentage__c</fullName>
+        <externalId>false</externalId>
+        <label>Deposit Percentage</label>
+        <precision>18</precision>
+        <required>false</required>
+        <scale>2</scale>
+        <trackTrending>false</trackTrending>
+        <type>Percent</type>
+    </fields>
+    <fields>
+        <fullName>List_Price__c</fullName>
+        <defaultValue>false</defaultValue>
+        <externalId>false</externalId>
+        <label>List Price</label>
+        <trackTrending>false</trackTrending>
+        <type>Checkbox</type>
+    </fields>
+    <fields>
+        <fullName>Organization_Address__c</fullName>
+        <externalId>false</externalId>
+        <label>Organization Address</label>
+        <length>255</length>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>Text</type>
+        <unique>false</unique>
+    </fields>
+    <fields>
+        <fullName>Event_Transactions_Report_ID__c</fullName>
+        <externalId>false</externalId>
+        <label>Event Transactions Report ID</label>
+        <length>255</length>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>Text</type>
+        <unique>false</unique>
+    </fields>
+    <fields>
+        <fullName>Organization_Fax__c</fullName>
+        <externalId>false</externalId>
+        <label>Organization Fax</label>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>Phone</type>
+    </fields>
+    <fields>
+        <fullName>Organization_Name__c</fullName>
+        <externalId>false</externalId>
+        <label>Organization Name</label>
+        <length>100</length>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>Text</type>
+        <unique>false</unique>
+    </fields>
+    <fields>
+        <fullName>Organization_Phone__c</fullName>
+        <externalId>false</externalId>
+        <label>Organization Phone</label>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>Phone</type>
+    </fields>
+    <fields>
+        <fullName>Server_of_Total_Bar_Service_Charge__c</fullName>
+        <externalId>false</externalId>
+        <label>Server % of Total Bar Service Charge</label>
+        <precision>18</precision>
+        <required>false</required>
+        <scale>2</scale>
+        <trackTrending>false</trackTrending>
+        <type>Percent</type>
+    </fields>
+    <fields>
+        <fullName>Server_of_Total_Beverage_Service_Charg__c</fullName>
+        <externalId>false</externalId>
+        <label>Server % of Total Beverage Service Charg</label>
+        <precision>18</precision>
+        <required>false</required>
+        <scale>2</scale>
+        <trackTrending>false</trackTrending>
+        <type>Percent</type>
+    </fields>
+    <fields>
+        <fullName>Server_of_Total_Fitness_Service_Charge__c</fullName>
+        <externalId>false</externalId>
+        <label>Server % of Total Fitness Service Charge</label>
+        <precision>18</precision>
+        <required>false</required>
+        <scale>2</scale>
+        <trackTrending>false</trackTrending>
+        <type>Percent</type>
+    </fields>
+    <fields>
+        <fullName>Server_of_Total_Food_Service_Charge__c</fullName>
+        <externalId>false</externalId>
+        <label>Server % of Total Food Service Charge</label>
+        <precision>18</precision>
+        <required>false</required>
+        <scale>2</scale>
+        <trackTrending>false</trackTrending>
+        <type>Percent</type>
+    </fields>
+    <fields>
+        <fullName>Server_of_Total_Other_Service_Charge__c</fullName>
+        <externalId>false</externalId>
+        <label>Server % of Total Other Service Charge</label>
+        <precision>18</precision>
+        <required>false</required>
+        <scale>2</scale>
+        <trackTrending>false</trackTrending>
+        <type>Percent</type>
+    </fields>
+    <fields>
+        <fullName>Total_Bar_Service_Charge__c</fullName>
+        <externalId>false</externalId>
+        <label>Total Bar Service Charge %</label>
+        <precision>18</precision>
+        <required>false</required>
+        <scale>2</scale>
+        <trackTrending>false</trackTrending>
+        <type>Percent</type>
+    </fields>
+    <fields>
+        <fullName>Total_Beverage_Service_Charge__c</fullName>
+        <externalId>false</externalId>
+        <label>Total Beverage Service Charge %</label>
+        <precision>18</precision>
+        <required>false</required>
+        <scale>2</scale>
+        <trackTrending>false</trackTrending>
+        <type>Percent</type>
+    </fields>
+    <fields>
+        <fullName>Total_Fitness_Service_Charge__c</fullName>
+        <externalId>false</externalId>
+        <label>Total Fitness Service Charge %</label>
+        <precision>18</precision>
+        <required>false</required>
+        <scale>2</scale>
+        <trackTrending>false</trackTrending>
+        <type>Percent</type>
+    </fields>
+    <fields>
+        <fullName>Total_Food_Service_Charge__c</fullName>
+        <externalId>false</externalId>
+        <label>Total Food Service Charge %</label>
+        <precision>18</precision>
+        <required>false</required>
+        <scale>2</scale>
+        <trackTrending>false</trackTrending>
+        <type>Percent</type>
+    </fields>
+    <fields>
+        <fullName>Total_Other_Service_Charge__c</fullName>
+        <externalId>false</externalId>
+        <label>Total Other Service Charge %</label>
+        <precision>18</precision>
+        <required>false</required>
+        <scale>2</scale>
+        <trackTrending>false</trackTrending>
+        <type>Percent</type>
+    </fields>
+    <label>Events</label>
+    <visibility>Public</visibility>
+</CustomObject>

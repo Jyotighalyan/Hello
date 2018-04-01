@@ -1,0 +1,300 @@
+<apex:page standardStyleSheets="false" renderAs="pdf" showHeader="false" sidebar="false"  controller="MemberStatementPDFCont"  applyBodyTag="false" action="{!getprintCheckList}">
+    <!--renderAs="pdf"-->
+    
+    <head>
+        <apex:includeScript value="{!URLFOR($Resource.jscolor,'/jscolor.js')}"/>
+        <apex:includeScript value="{!URLFOR($Resource.jscolor,'/jscolor.min.js')}"/>
+        <apex:includeScript value="{!URLFOR($Resource.jQuery_UI,'/jquery-ui-1.10.3.custom/js/jquery-3.2.1.min.js')}"/>
+        <apex:includeScript value="{!URLFOR($Resource.jQuery_UI,'/jquery-ui-1.10.3.custom/js/jquery-ui-1.10.3.custom.min.js')}"/>
+        <apex:includeScript value="{!URLFOR($Resource.jQuery_UI,'/jquery-ui-1.10.3.custom/js/jquery-ui.1.12.1.js')}"/>
+        <apex:stylesheet value="{!URLFOR($Resource.jQuery_UI,'/jquery-ui-1.10.3.custom/css/ui-lightness/jquery-ui-1.12.1.css')}"/>
+        
+        
+        
+        <apex:includeScript value="{!URLFOR($Resource.jQuery_UI,'/jquery-ui-1.10.3.custom/js/jquery.dataTables.1.10.15.js')}"/>
+        <apex:stylesheet value="{!URLFOR($Resource.jQuery_UI, '/jquery-ui-1.10.3.custom/css/ui-lightness/jquery.dataTables.1.10.15.css')}"/>
+        <apex:stylesheet value="{!URLFOR($Resource.jQuery_UI, '/jquery-ui-1.10.3.custom/css/ui-lightness/jquery-ui-1.10.3.custom.min.css')}"/>
+        
+        
+        
+        
+        <script src="https://cdn.datatables.net/colreorder/1.4.1/js/dataTables.colReorder.min.js"></script>
+        <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/colreorder/1.4.1/css/colReorder.dataTables.min.css"/>
+            <script>
+            
+            var j$ = jQuery.noConflict();
+        
+        </script>
+        <style>
+            p {
+            text-indent:10px;
+            }
+            body {
+            page-break-before:always;
+            }
+            pre {
+            display: inline;
+            }
+            @page{
+            margin:0in;
+            }
+            tr.spaceAboveCheckNum > td {
+            padding-top: 1.2em;
+            }
+            tr.spaceAbove > td {
+            padding-top: 0.6em;
+            }
+            tr.spaceAbovePay > td {
+            padding-top: 1.0em;
+            }
+            .totalAmount{
+            font-size:1.3em;
+            }
+            .page-break:not(:last-child) {
+            display:block;
+            overflow:hidden;
+            page-break-after:always;
+            }
+            .page-break2:not(:last-child) {
+            display:block;
+            overflow:hidden;
+            page-break-after:always;
+            }
+        </style>
+        <script>
+                j$(document).ready(function() {
+                    var orderData='{!spacing.column_order__c}';
+                    orderData=orderData.split(',');
+                    var order=[];
+                    for(i=0;i<orderData.length;i++){
+                        order.push(parseInt(orderData[i].trim()));
+                    }
+                    console.log(order);
+                    var table = j$('#stLines').DataTable( {
+                        colReorder: {
+                            order: order
+                        } ,
+                        "paging":   false,
+                        "searching":   false,
+                        "info":     false
+                    } );
+                });
+                </script>
+    </head>
+    <body> 
+        <apex:repeat value="{!pages}" var="i">
+        <div class="page-break" style="width:816px; position:relative; height:1056px;"> 
+            <br/><br/>
+            <div  style="position:relative;left:{!spacing.logo_left__c}px;top:{!spacing.logo_top__c}px;border: double rgb(6, 6, 6); width: 15%; height:12% ">
+                Logo
+            </div> 
+            <div id="ClubNameDrag"  style="color:{!spacing.color__c};position:relative;width:12%;left:{!spacing.club_name_left__c }px;top:{!spacing.club_name_top__c }px;">
+                {!OrgDet.name}
+            </div>
+            <div id="AddressDrag"  style="color:{!spacing.color__c};position:relative;width:12%;left:{!spacing.club_address_left__c }px;top:{!spacing.club_address_top__c }px;">
+                <apex:outputText value="{!OrgDet.Street}" />
+            </div>
+            
+            <div id="phoneDrag"  style="color:{!spacing.color__c};position:relative;width:13%;left:{!spacing.club_phone_left__c }px;top:{!spacing.club_phone_top__c}px;">
+                {!OrgDet.Phone}
+            </div>
+            <div id="faxDrag"  style="color:{!spacing.color__c};position:relative;width:16%;left:{!spacing.fax_left__c }px;top:{!spacing.fax_top__c}px;">
+                {!OrgDet.fax}
+            </div>
+            
+            <div id="EmailIdDrag" style="color:{!spacing.color__c};position:relative;width:14%;left:{!spacing.club_email_left__c }px;top:{!spacing.club_email_top__c }px;">
+                {!spacing.email_id__c }
+            </div>
+            
+            <div id="StatementLabelDrag"  style="color:{!spacing.color__c};position:relative;width:14%;left:{!spacing.statement_label_left__c }px;top:{!spacing.statement_label_top__c }px;">
+                Statement
+            </div>
+            <div id="note1Drag"  style="color:{!spacing.color__c};position:relative;width:20%;left:{!spacing.notes_1_left__c }px;top:{!spacing.notes_1_top__c }px">
+                <apex:outputField value="{!spacing.Note_1__c}" />
+            </div>
+            <div id="note2Drag"  style="color:{!spacing.color__c};position:relative;width:20%;left:{!spacing.notes_2_left__c }px;top:{!spacing.notes_2_top__c }px">
+                <apex:outputField value="{!spacing.Note_2__c}" />
+            </div>
+            <div id='AccountNoDrag' align="center"  style="color:{!spacing.color__c};position:relative;left:{!spacing.account_no_left__c }px;top:{!spacing.account_no_top__c }px;width: 12%;">
+                <div   style="color:{!spacing.color__c};width:100%;border: groove;  height: 16%;">
+                    Account No.
+                </div>
+                <div   style="color:{!spacing.color__c};width:100%;border: groove;  height: 16%;">
+                    {!statement[0].Member__r.Customer_Id__c }
+                </div>
+            </div>
+            <div id='StatementDateDrag' align="center" style="color:{!spacing.color__c};position:relative;left:{!spacing.statement_date_left__c }px;top:{!spacing.statement_date_top__c }px;width: 13%; ">
+                <div   style="color:{!spacing.color__c};width:100%;border: groove;  height: 16%;">
+                    Statement Date
+                </div>
+                <div   style="color:{!spacing.color__c};width:100%;border: groove;  height: 16%;">
+                    {!statement[0].Billing_Period__c}
+                </div>
+            </div>
+            <div id='pageNoDrag' align="center" style="color:{!spacing.color__c};position:relative;left:{!spacing.page_no_left__c }px;top:{!spacing.page_no_top__c }px;width: 13%; ">
+                <div   style="color:{!spacing.color__c};width:100%;border: groove;  height: 16%;">
+                    Page No.
+                </div>
+                <div   style="color:{!spacing.color__c};width:100%;border: groove;  height: 16%;">
+                    {!i} of {!totalPage}
+                </div>
+            </div>
+            <div id='BalanceDueDrag' align="center" style="color:{!spacing.color__c};position:relative;left:{!spacing.due_left__c }px;top:{!spacing.due_top__c }px;width: 13%; ">
+                <div   style="color:{!spacing.color__c};width:100%;border: groove;  height: 16%;">
+                    Balance Due
+                </div>
+                <div   style="color:{!spacing.color__c};width:100%;border: groove;  height: 16%;">
+                    {!statement[0].Statement_Balance__c * -1}
+                </div>
+            </div>
+            <div id='amountPaidDrag' align="center" style="color:{!spacing.color__c};position:relative;left:{!spacing.amount_paid_left__c  }px;top:{!spacing.amount_paid_top__c  }px;width: 13%; ">
+                <div   style="color:{!spacing.color__c};width:100%;border: groove;  height: 16%;">
+                    Amount Paid
+                </div>
+                <div   style="color:{!spacing.color__c};width:100%;border: groove;  height: 16%;">
+                    0.00
+                </div>
+            </div>
+            <div id='amountPaidDrag' align="center" style="color:{!spacing.color__c};position:relative;left:{!spacing.Current_left__c  }px;top:{!spacing.Current_top__c  }px;width: 13%; ">
+                <div   style="color:{!spacing.color__c};width:100%;border: groove;  height: 16%;">
+                    Current
+                </div>
+                <div   style="color:{!spacing.color__c};width:100%;border: groove;  height: 16%;">
+                    {!statement[0].Statement_Balance__c * -1}
+                </div>
+            </div>
+            <div id='amountPaidDrag' align="center" style="color:{!spacing.color__c};position:relative;left:{!spacing.over_30_left__c  }px;top:{!spacing.over_30_top__c  }px;width: 13%; ">
+                <div   style="color:{!spacing.color__c};width:100%;border: groove;  height: 16%;">
+                    Over 30
+                </div>
+                <div   style="color:{!spacing.color__c};width:100%;border: groove;  height: 16%;">
+                    0.00
+                </div>
+            </div>
+            <div id='amountPaidDrag' align="center" style="color:{!spacing.color__c};position:relative;left:{!spacing.over_60_left__c  }px;top:{!spacing.over_60_top__c  }px;width: 13%; ">
+                <div   style="color:{!spacing.color__c};width:100%;border: groove;  height: 16%;">
+                    Over 60
+                </div>
+                <div   style="color:{!spacing.color__c};width:100%;border: groove;  height: 16%;">
+                    0.00
+                </div>
+            </div>
+            <div id='amountPaidDrag' align="center" style="color:{!spacing.color__c};position:relative;left:{!spacing.over_90_left__c  }px;top:{!spacing.over_90_top__c  }px;width: 13%; ">
+                <div   style="color:{!spacing.color__c};width:100%;border: groove;  height: 16%;">
+                    Over 90
+                </div>
+                <div   style="color:{!spacing.color__c};width:100%;border: groove;  height: 16%;">
+                    0.00
+                </div>
+            </div>
+            <div id='amountPaidDrag' align="center" style="color:{!spacing.color__c};position:relative;left:{!spacing.balance_due_left__c  }px;top:{!spacing.balance_due_top__c  }px;width: 13%; ">
+                <div   style="color:{!spacing.color__c};width:100%;border: groove;  height: 16%;">
+                    Balance due
+                </div>
+                <div   style="color:{!spacing.color__c};width:100%;border: groove;  height: 16%;">
+                    0.00
+                </div>
+            </div>
+            
+            <div id="tableDrag" style="color:{!spacing.color__c};position:relative;width:90%;left:{!spacing.table_left__c}px;top:{!spacing.table_top__c}px;">
+                <table  style="width:100%;position:relative;">
+                    
+                
+               <!-- <apex:dataTable  id="stLines"  value="{!sclns[i]}" var="lines" style="width:100%;position:relative;" >
+                    
+                    <apex:column style="display : {!IF(spacing.table_header_1_hide__c==true,'none','table-cell')}" headerValue="{!spacing.table_header_1__c}">
+                    	<apex:outputField value="{!lines.Date__c}"/>
+                    </apex:column>
+                    
+                    <apex:column style="display : {!IF(spacing.table_header_2_hide__c==true,'none','table-cell')}" headerValue="{!spacing.table_header_2__c}">
+                    	reference
+                    </apex:column>
+                     <apex:column style="display : {!IF(spacing.table_header_3_hide__c==true,'none','table-cell')}" headerValue="{!spacing.table_header_3__c}">
+                    	{!lines.Amount__c * -1}
+                    </apex:column>
+                     <apex:column style="display : {!IF(spacing.table_header_4_hide__c==true,'none','table-cell')}" headerValue="{!spacing.table_header_4__c}">
+                    	{!lines.Description__c}
+                    </apex:column>
+                     <apex:column style="display : {!IF(spacing.table_header_5_hide__c==true,'none','table-cell')}" headerValue="{!spacing.table_header_5__c}">
+                    	{!lines.Service_Charge__c}
+                    </apex:column>
+                     <apex:column style="display : {!IF(spacing.table_header_6_hide__c==true,'none','table-cell')}" headerValue="{!spacing.table_header_6__c}">
+                    	{!lines.Tax__c}
+                    </apex:column>
+                     <apex:column style="display : {!IF(spacing.table_header_7_hide__c==true,'none','table-cell')}" headerValue="{!spacing.table_header_7__c}">
+                    	{!lines.Amount__c * -1 + lines.Tax__c +lines.Service_Charge__c }
+                    </apex:column>
+                     <apex:column style="display : {!IF(spacing.table_header_8_hide__c==true,'none','table-cell')}" headerValue="{!spacing.table_header_8__c}">
+                    	8
+                    </apex:column>
+                     <apex:column style="display : {!IF(spacing.table_header_9_hide__c==true,'none','table-cell')}" headerValue="{!spacing.table_header_9__c}">
+                    	9
+                    </apex:column>
+                     <apex:column style="display : {!IF(spacing.table_header_10_hide__c==true,'none','table-cell')}" headerValue="{!spacing.table_header_10__c}">
+                    	10
+                    </apex:column>-->
+                    <thead>
+                        <tr>
+                            <td style="display : {!IF(spacing.table_header_1_hide__c==true,'none','table-cell')}" >
+                                {!spacing.table_header_1__c}
+                            </td>
+                            <td style="display : {!IF(spacing.table_header_2_hide__c==true,'none','table-cell')}" >
+                                {!spacing.table_header_2__c}
+                            </td>
+                            <td style="display : {!IF(spacing.table_header_3_hide__c==true,'none','table-cell')}" >
+                                {!spacing.table_header_3__c}
+                            </td>
+                            <td style="display : {!IF(spacing.table_header_4_hide__c==true,'none','table-cell')}" >
+                                {!spacing.table_header_4__c}
+                            </td>
+                            <td style="display : {!IF(spacing.table_header_5_hide__c==true,'none','table-cell')}" >
+                                {!spacing.table_header_5__c}
+                            </td>
+                            <td style="display : {!IF(spacing.table_header_6_hide__c==true,'none','table-cell')}" >
+                                {!spacing.table_header_6__c}
+                            </td>
+                            <td style="display : {!IF(spacing.table_header_7_hide__c==true,'none','table-cell')}" >
+                                {!spacing.table_header_7__c}
+                            </td>
+                            <td style="display : {!IF(spacing.table_header_8_hide__c==true,'none','table-cell')}" >
+                                {!spacing.table_header_8__c}
+                            </td>
+                            <td style="display : {!IF(spacing.table_header_9_hide__c==true,'none','table-cell')}" >
+                                {!spacing.table_header_9__c}
+                            </td>
+                            <td style="display : {!IF(spacing.table_header_10_hide__c==true,'none','table-cell')}" >
+                                {!spacing.table_header_10__c}
+                            </td>
+                        </tr>
+                    </thead>
+                    <apex:repeat value="{!sclns[i]}" var="lines" id="CheckInvoicesRepeat" >
+                        <tr>
+                            <td style="display : {!IF(spacing.table_header_1_hide__c==true,'none','table-cell')}" >
+                                <apex:outputField value="{!lines.Date__c}"/></td>
+                            <td style="display : {!IF(spacing.table_header_2_hide__c==true,'none','table-cell')}" >
+                                reference</td>
+                            <td style="display : {!IF(spacing.table_header_3_hide__c==true,'none','table-cell')}" >
+                                {!lines.Description__c} </td>
+                            <td style="display : {!IF(spacing.table_header_4_hide__c==true,'none','table-cell')}" >
+                                {!lines.Amount__c * -1}</td>
+                            <td style="display : {!IF(spacing.table_header_5_hide__c==true,'none','table-cell')}" >
+                                {!lines.Service_Charge__c} </td>
+                            <td style="display : {!IF(spacing.table_header_6_hide__c==true,'none','table-cell')}" >
+                                {!lines.Tax__c} </td>
+                            <td style="display : {!IF(spacing.table_header_7_hide__c==true,'none','table-cell')}" >
+                                {!lines.Amount__c * -1 + lines.Tax__c +lines.Service_Charge__c }</td>
+                            <td style="display : {!IF(spacing.table_header_8_hide__c==true,'none','table-cell')}" >
+                                8</td>
+                            <td style="display : {!IF(spacing.table_header_9_hide__c==true,'none','table-cell')}" >
+                                9</td>
+                            <td style="display : {!IF(spacing.table_header_10_hide__c==true,'none','table-cell')}" >
+                                10</td>
+                        </tr>
+                    </apex:repeat>
+                </table>
+            </div>
+            
+        </div>
+            </apex:repeat>
+    </body>
+</apex:page>

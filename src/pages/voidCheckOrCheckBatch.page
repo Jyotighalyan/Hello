@@ -1,0 +1,37 @@
+<apex:page controller="voidCheckorCheckBatch">
+    <apex:includescript value="{!URLFOR($Resource.jqueryDatatable_3embed,'/3embed/jquery-1.11.1.min.js')}" />
+    
+    <script>
+    $(document).ready(function(){
+        if('{!JSENCODE(HTMLENCODE(checkId))}'!=''){
+            if('{!alreadyVoided}' == 'true'){
+                alert('This check is already voided.');
+                returnToCheckPage();
+            }else
+                if(confirm('Are you sure you want to void this check?')){
+                    VoidCheck();
+                }else{
+                    returnToCheckPage();
+                }
+        } if('{!JSENCODE(HTMLENCODE(batchId))}'!=''){
+            if('{!alreadyVoided}' == 'true'){
+                alert('This batch is already voided.');
+                returnToBatchPage();
+            }else{
+                if(confirm('Are you sure you want to void this check batch?')){
+                    VoidBatch();
+                }else{
+                    returnToBatchPage();
+                }
+            }
+        }
+    });
+    </script>
+    <apex:pageMessages />
+    <apex:form >
+        <apex:actionFunction name="VoidCheck" action="{!VoidCheck}"/>
+        <apex:actionFunction name="VoidBatch" action="{!VoidBatch}"/>
+        <apex:actionFunction name="returnToCheckPage" action="{!returnToCheckPage}"/>
+        <apex:actionFunction name="returnToBatchPage" action="{!returnToBatchPage}"/>
+    </apex:form>
+</apex:page>

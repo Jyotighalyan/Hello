@@ -1,0 +1,301 @@
+<apex:page docType="html-5.0" showHeader="true" sidebar="true" controller="ApproveStatementsController">
+	<head>
+		<apex:includescript value="{!URLFOR($Resource.jqueryDatatable_3embed,'/3embed/jquery-1.11.1.min.js')}" />
+		<apex:stylesheet value="{!URLFOR($Resource.fontawesome,'/css/font-awesome.css')}"/>
+		<apex:stylesheet value="{!URLFOR($Resource.foretees, '/ProgressBar/progressbar.css')}"/>
+		<apex:includeScript value="{!URLFOR($Resource.jQuery_UI,'/jquery-ui-1.10.3.custom/js/jquery.dataTables.js')}"/>
+		<apex:stylesheet value="{!URLFOR($Resource.jqueryDatatable_3embed,'/3embed/jquery.dataTables.min.css')}" />
+	</head>
+	<style>
+        .arrow { color:silver !important; text-decoration:underline; cursor:pointer; cursor:hand; }
+        .arrow { font-size:7px; text-decoration:none; position:relative;}
+        .arrow { font-size:0.8em;}
+        .arrow:hover {color:#7a80dd !important;}
+        fieldset{
+		border:none;
+		margin-top: -7px;
+		}
+		#summaryDetailTable{
+	    width:100%; 
+	    border-collapse:collapse; 
+    	}
+		#summaryDetailTable tr:hover {
+	      	background-color:#f8f8f8;
+		}
+    </style>
+    <script>
+    function cancel(){
+    	window.location.href = "{!HTMLENCODE(JSENCODE($Page.FinancialLandingPage))}";
+    }
+	var fields = ['Name', 'Billing_Period__c', 'Member__r.Name', 'Member__r.Relationship__c', 'Member__r.Customer_Id__c', 'Member__r.Membership_Type__c' ,'Statement_Balance__c'];
+
+	var aoColumns = [];
+	for (var i = 0; i < fields.length; i++) {
+	    aoColumns.push({'mData': fields[i]});
+	}
+    function showDetails(cb){
+    	if($(cb).is(":checked")){
+    		$('.detailPart').show();
+    	}
+    	else{
+    		$('.detailPart').hide();
+    	}
+    }
+    </script>
+	<br/>
+	<apex:outputLink id="link" styleClass="" value="/{!$Page.FinancialLandingPage}">Financial Landing Page </apex:outputLink>&nbsp; <i class="fa fa-angle-right" aria-hidden="true"></i>&nbsp; Approve Statements setup
+	<br/>
+	<br/>
+	 <apex:actionStatus id="WORKING">
+      <apex:facet name="start">
+          <div class="waitingSearchDiv" style="background-color: #000;
+              height: 100%;filter: alpha(opacity=50);opacity:0.5;width:100%;">
+          </div>
+          <div class="waitingSearchDiv" style="z-index:999;width:100%;position: fixed;">
+              <div class="waitingHolder" style="z-index:999;top: 175px; left: 20px; width: 200px;height: 25px;background-color: #fff;border: 1px solid black;border-radius: 5px;padding-top: 10px;color: #000;">
+                  <span class="waitingDescription" style="color:#000;">Working...</span>
+                  <img class="waitingImage" src="/img/loading.gif" title="Please Wait..." />
+              </div>
+          </div>
+      </apex:facet>
+    </apex:actionStatus>
+	<apex:pageBlock >
+		<apex:pageMessages id="Msg"/>
+		<apex:outputPanel id="batch">
+			<script>
+			if('{!noStmtsSelected}'=='true'){
+				alert('Please select statements to be approved.');
+			}
+			</script>
+			<apex:outputPanel rendered="{!IF(batchId!=null,true,false)}">
+				<c:BatchStatus bachId="{!batchId}" url="ApproveStatements"/>
+			</apex:outputPanel>
+		</apex:outputPanel>
+		<apex:form >
+			 <apex:actionFunction name="sort" status="WORKING" action="{!doSort}" reRender="summTable">
+	            <apex:param name="columnName" value=""/>
+	            <apex:param name="description" value=""/>
+         	</apex:actionFunction>
+			<apex:actionFunction name="refreshPageSize" action="{!refreshPageSize}" status="fetchStatus" reRender="summTable"/>
+			 <apex:pageBlockSection title="Test" showHeader="true" rendered="false">
+                <apex:pageBlockSectionItem >
+                    <apex:outputText value="Label" />
+                    <apex:outputText value="Value" />
+                </apex:pageBlockSectionItem>
+            </apex:pageBlockSection>
+			<apex:outputPanel styleClass="head">
+				<apex:pageBlockSection id="summTable" title="Available Statement Summaries" columns="1">
+					<br/>
+					<apex:pageBlockTable id="summT" value="{!listToShow}" var="UnappStmt" width="100%">
+						<apex:column >
+                        	<apex:inputCheckbox value="{!UnappStmt.isUpdate}"/>
+                        	<apex:facet name="header">
+                        		<apex:outputPanel >
+                        			<apex:inputCheckbox style="margin-top: 0px;" value="{!approveAll}">
+                        				<apex:actionSupport action="{!approveAllStatements}" event="onchange" reRender="summT" status="WORKING"/>
+                        			</apex:inputCheckbox>
+                        			&nbsp;<apex:outputText style="vertical-align: top;" value="Approve All?" title="Check to approve all statement summaries"/>
+                        		</apex:outputPanel>
+                        	</apex:facet>
+                    	</apex:column>
+						<apex:column >
+                        	 <apex:outputLink target="_blank" value="/{!UnappStmt.stmt.Id}">{!UnappStmt.stmt.Statement_Summary_Name__c}</apex:outputLink>
+                        	 <apex:facet name="header">
+		                        <apex:outputPanel >
+		                            Summary Name
+		                            <div align="right" style="margin-top: -14px; margin-right: 10px;">
+		                                <apex:commandLink styleclass="arrow" style="layout: block;" onclick="sort('Statement_Summary_Name__c','asc'); return false"> &#9650;</apex:commandLink>
+		                            </div>
+		                            <div align="right" style="margin-top: -4px; margin-right: 10px;">
+		                                <apex:commandLink styleclass="arrow" style="layout: block" onclick="sort('Statement_Summary_Name__c','desc'); return false"> &#9660;</apex:commandLink>
+		                            </div>
+		                        </apex:outputPanel>
+                   			</apex:facet>
+                    	</apex:column>
+                    	<apex:column headerValue="Billing Period">
+                        	<apex:outputField value="{!UnappStmt.stmt.Billing_Period__c}"/>
+                    	</apex:column>
+                    	<apex:column >
+                        	<apex:outputField value="{!UnappStmt.stmt.Date__c}"/>
+                        	<apex:facet name="header">
+		                        <apex:outputPanel >
+		                            From
+		                            <div align="right" style="margin-top: -14px; margin-right: 10px;">
+		                                <apex:commandLink styleclass="arrow" style="layout: block;" onclick="sort('Date__c','asc'); return false"> &#9650;</apex:commandLink>
+		                            </div>
+		                            <div align="right" style="margin-top: -4px; margin-right: 10px;">
+		                                <apex:commandLink styleclass="arrow" style="layout: block" onclick="sort('Date__c','desc'); return false"> &#9660;</apex:commandLink>
+		                            </div>
+		                        </apex:outputPanel>
+                   			</apex:facet>
+                    	</apex:column>
+                    	<apex:column >
+                        	<apex:outputField value="{!UnappStmt.stmt.To_Date__c}"/>
+                        	<apex:facet name="header">
+		                        <apex:outputPanel >
+		                            To
+		                            <div align="right" style="margin-top: -14px; margin-right: 10px;">
+		                                <apex:commandLink styleclass="arrow" style="layout: block;" onclick="sort('Date__c','asc'); return false"> &#9650;</apex:commandLink>
+		                            </div>
+		                            <div align="right" style="margin-top: -4px; margin-right: 10px;">
+		                                <apex:commandLink styleclass="arrow" style="layout: block" onclick="sort('Date__c','desc'); return false"> &#9660;</apex:commandLink>
+		                            </div>
+		                        </apex:outputPanel>
+                   			</apex:facet>
+                    	</apex:column>
+                    	<apex:column >
+                        	<apex:outputField value="{!UnappStmt.stmt.CreatedDate}"/>
+                        	<apex:facet name="header">
+		                        <apex:outputPanel >
+		                            Generated Date
+		                            <div align="right" style="margin-top: -14px; margin-right: 10px;">
+		                                <apex:commandLink styleclass="arrow" style="layout: block;" onclick="sort('Date__c','asc'); return false"> &#9650;</apex:commandLink>
+		                            </div>
+		                            <div align="right" style="margin-top: -4px; margin-right: 10px;">
+		                                <apex:commandLink styleclass="arrow" style="layout: block" onclick="sort('Date__c','desc'); return false"> &#9660;</apex:commandLink>
+		                            </div>
+		                        </apex:outputPanel>
+                   			</apex:facet>
+                    	</apex:column>
+					</apex:pageBlockTable>
+					<apex:outputPanel >
+		                <apex:selectList value="{!size}" multiselect="false" size="1" onchange="refreshPageSize();">
+		                    <apex:selectOptions value="{!paginationSizeOptions}"/>
+		                </apex:selectList>&nbsp;
+		                <apex:commandButton status="fetchStatus" reRender="summTable" value="First" action="{!first}" disabled="{!NOT(hasPrevious)}" title="First Page"/> 
+		  
+		                <apex:commandButton status="fetchStatus" reRender="summTable" value="Previous" action="{!previous}" disabled="{!NOT(hasPrevious)}" title="Previous Page"/> 
+		  
+		                <apex:commandButton status="fetchStatus" reRender="summTable" value="Next" action="{!next}" disabled="{!NOT(hasNext)}" title="Next Page"/> 
+		  
+		                <apex:commandButton status="fetchStatus" reRender="summTable" value="Last" action="{!last}" disabled="{!NOT(hasNext)}" title="Last Page"/> 
+		                <apex:outputPanel ><apex:outputText style="margin-top: 5px;">&nbsp;Page {!pageNumber} of {!totalPages}&nbsp;
+		                </apex:outputText> </apex:outputPanel>
+		                <apex:outputPanel >                      
+		                    <apex:actionStatus id="fetchStatus" >
+		                        <apex:facet name="start" >
+		                          <img src="/img/loading.gif" />                    
+		                        </apex:facet>
+		                    </apex:actionStatus>
+		                </apex:outputPanel> 
+	                </apex:outputPanel>
+
+	                <apex:pageBlockSectionItem >
+	                	<apex:outputPanel layout="block" style="text-align: center;">
+                			<table width="100%">
+	                			<tbody>
+	                				<td width="95%"></td>
+	                				<td><apex:commandButton value="Approve Statements" action="{!approveStatemets}" status="WORKING" reRender="batch"/></td>
+	                				<td><apex:commandButton value="Cancel" onclick="cancel(); return false"/></td>
+	                				<td width="5%"></td>
+	                			</tbody>
+                			</table>	                			
+	                	</apex:outputPanel>
+	                </apex:pageBlockSectionItem>
+	                <apex:pageBlockSectionItem rendered="{!showDetails}">
+	                	<apex:outputLabel value="Statement Summary Details? : "/>
+	                	<apex:outputPanel >
+	                		<input type="checkbox" onchange="showDetails(this);" style="margin-top: 1px;"/>
+	                	</apex:outputPanel>
+	                </apex:pageBlockSectionItem>
+				</apex:pageBlockSection>
+				<br/>
+				<apex:outputPanel styleClass="detailPart">
+					<apex:pageBlockSection title="Statement Details" columns="1">
+						<br/>
+						<apex:pageBlockSectionItem >
+							<apex:outputLabel value="Select Statement : "/>
+							<apex:outputPanel >
+							<apex:selectList value="{!selectedStatement}" size="1">
+								<apex:selectOptions value="{!unapprovedStmtsOptions}"/>
+								<apex:actionSupport status="WORKING" event="onchange" action="{!renderStatementTable}" reRender="detailTable"/>
+							</apex:selectList>
+							</apex:outputPanel>
+						</apex:pageBlockSectionItem>
+						<apex:pageBlockSectionItem >
+							<apex:outputLabel value="Select Membership Types : "/>
+							<c:MultiselectPicklist leftLabel="Available Membership Types" 
+	                         leftOption="{!availableMemTypes}"
+	                         rightLabel="Selected Membership Types"
+	                         rightOption="{!selectedMemTypes}"
+	                         size="10"
+	                         width="200px"                                 
+	                         /> 
+						</apex:pageBlockSectionItem>
+						<br/>
+						<apex:pageBlockSectionItem >
+							<apex:outputLabel value="Member Id Range : "/>
+							<apex:outputPanel >
+								<fieldset><apex:outputLabel value="From "/><apex:input html-min="0" style="width: 100px;" type="number" value="{!memIdFrom}"/>&nbsp;&nbsp;
+								<apex:outputLabel value="To "/><apex:input html-min="0" style="width: 100px;" type="number" value="{!memIdTo}"/>
+								&nbsp; &nbsp; &nbsp;<apex:commandButton status="WORKING" value="Apply Filters" action="{!renderStatementTable}" reRender="detailTable"/></fieldset>
+							</apex:outputPanel>
+						</apex:pageBlockSectionItem>
+						<apex:pageBlockSectionItem >
+							<apex:outputPanel id="detailTable">
+								<table id="summaryDetailTable" style="width: 100%;" cellpadding="0" cellspacing="0" border="0">
+								    <thead>	
+								    	<th>Member Statement Name</th>
+								    	<th>Billing Period</th>
+								        <th>Member Name</th>
+								        <th>Relationship</th>
+								        <th>Member Id</th>
+								        <th>Membership Type</th>
+								        <th>Statement Balance ({!currencySymbol})</th>
+								    </thead>
+								    <tbody>
+								    </tbody>
+								</table>
+								<script>
+									if('{!JSENCODE(HTMLENCODE(selectedStatement))}' != ''){
+									var types = new Set();
+									var rightl = ($('input[id$=rightHidden]')).val();
+									var typesToPass='';
+									if(rightl!='undefined' && rightl!=''){	
+										var items = rightl.split('&');
+										i;
+										for(i = 0; i < items.length; i++){
+											types.add(items[i]);
+										}
+										typesToPass = (Array.from(types)).toString();
+									}
+									// $.fn.dataTable.render.number( ',', '.', 2 );  //block alert                                     
+							        var table = $('#summaryDetailTable').dataTable( {
+							            "processing": true,
+							            "serverSide": true,
+							            "ajax": "/apex/DataTableHelper?FromPage='Statements'&stmtId={!JSENCODE(HTMLENCODE(selectedStatement))}&fromMemId={!JSENCODE(HTMLENCODE(TEXT(memIdFrom)))}&&toMemId={!JSENCODE(HTMLENCODE(TEXT(memIdTo)))}&memTypes="+typesToPass,
+							            "columns": aoColumns,
+							            "aoColumnDefs": [ {
+			      						"aTargets": [ 6 ],
+			    						"mRender": function (data, type, full) {
+			    							if( data === 0)
+			    							{
+			    								return '0.00';
+			    							}
+			    							else
+			    							{
+			     								return parseFloat(data.toString()).toFixed(2).replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,");
+			     							}
+			   							}
+			   							} ],
+										fnRowCallback : function( nRow, Data, iDisplayIndex, iDisplayIndexFull ) { 
+										  // this function is called for each row, but I 	could not use it to add the link
+			                  		      $('td:eq(0)', nRow).html('<a href="/'+Data.Id+'" target="_blank">'+Data.Name+'</a>');
+			                  		      $('td:eq(2)', nRow).html('<a href="/'+Data.Member__r.Id+'" target="_blank">'+Data.Member__r.Name+'</a>');
+			            				}
+							        } );
+
+							        
+							     }
+								</script>
+							</apex:outputPanel>
+						</apex:pageBlockSectionItem>
+					</apex:pageBlockSection>
+				</apex:outputPanel>
+				<script>
+					$('.detailPart').hide();
+				</script>
+			</apex:outputPanel>
+		</apex:form>
+	</apex:pageBlock>
+</apex:page>

@@ -1,0 +1,99 @@
+<apex:page showHeader="true" tabStyle="Contact" sidebar="true" controller="ApplyDuesController">
+    <apex:includescript value="{!URLFOR($Resource.jqueryDatatable_3embed,'/3embed/jquery-1.11.1.min.js')}" />
+    <apex:stylesheet value="{!URLFOR($Resource.fontawesome,'/css/font-awesome.css')}"/>
+    <apex:stylesheet value="{!URLFOR($Resource.foretees, '/ProgressBar/progressbar.css')}"/>
+
+    <style>
+     .contactTab .pageTitleIcon, .individualPalette .contactBlock .pageTitleIcon
+    {
+        background-position: initial !important;
+        background-image: url('/img/icon/cash32.png') !important;
+    }
+    </style>
+    <apex:sectionHeader title="Dues Billing" subtitle="{!memberRec.Name}" />
+    <apex:outputLink id="link" styleClass="tooltip" value="/{!memberRec.id}"> {!memberRec.Name}  </apex:outputLink> &nbsp; <i class="fa fa-angle-right" aria-hidden="true"></i>&nbsp; Due's Detail
+    <br/> <br/> 
+    <apex:actionStatus id="WORKING" >
+        <apex:facet name="start">
+            <div class="waitingSearchDiv" style="background-color: #000;
+                height: 100%;filter: alpha(opacity=50);opacity:0.5;width:100%;">
+            </div>
+            <div class="waitingSearchDiv" style="z-index:999;width:100%">
+                <div class="waitingHolder" style="z-index:999;top: 175px; left: 20px; width: 200px;height: 25px;background-color: #fff;border: 1px solid black;border-radius: 5px;padding-top: 10px;color: #000;">
+                    <span class="waitingDescription" style="color:#000;">Working...</span>
+                    <img class="waitingImage" src="/img/loading.gif" title="Please Wait..." />
+                </div>
+            </div>
+        </apex:facet>
+    </apex:actionStatus> 
+    <apex:form >
+    <apex:pageBlock >
+        <apex:pageMessages id="msgs"/>
+        <apex:outputPanel styleClass="head">
+        <apex:pageBlockSection title="{!memberRec.Name} Available Dues">
+            <c:MultiselectPicklist leftLabel="Available Fees/Dues" 
+                                 leftOption="{!allAvailableActiveDues}"
+                                 rightLabel="Selected Fees/Dues"
+                                 rightOption="{!duesListOnThisMember}"
+                                 size="10"
+                                 width="200px"                                 
+                                 /> 
+        </apex:pageBlockSection>
+        </apex:outputPanel>
+
+        <apex:pageBlockSection >
+                    <table class="topTable"> 
+                        <tbody> 
+                            <tr>
+                                <td style="width:20%;"></td>
+                                <td style="width:60%;"><apex:commandButton status="WORKING" action="{!ApplyDueOnMember}" value="Apply Dues" reRender="selectedDues, duesDetail"/></td> 
+                            </tr>
+                        </tbody>
+                    </table>
+        </apex:pageBlockSection> 
+        
+        <apex:outputPanel styleClass="head" id="selectedDues">
+        <apex:pageBlockSection title="{!memberRec.Name}'s Due Details">
+            <apex:pageBlockSectionItem >
+            <apex:outputPanel ><br/>
+                  Select Due : &nbsp; <apex:selectList id="SelectedDue" value="{!SelectedDuesForDetails}" size="1">
+                <apex:selectOptions value="{!duesListOnThisMemberForDetail}"></apex:selectOptions>  
+                <apex:actionSupport event="onchange" action="{!selectedDueDetails}" rerender="duesDetail" status="loadingSpinner">                 
+                </apex:actionSupport>
+            </apex:selectList></apex:outputPanel>
+            </apex:pageBlockSectionItem>
+        </apex:pageBlockSection>
+        </apex:outputPanel>
+        <br/>
+        <apex:pageBlockSection id="duesDetail" columns="1">
+            <apex:outputPanel rendered="{!IF(SelectedDuesForDetails=='none', false, true)}">
+            <table width="100%;" class="DistributionTable">
+                <thead>
+                    <th style="width: 20%">Month</th>
+                    <th style="width: 26%">Primary Amount </th>
+                    <th style="width: 26%">Spouse Amount</th>
+                    <th style="width: 28%">Dependent Amount</th>
+                </thead>
+                <tbody>
+                    <apex:repeat value="{!sortedListOfKeys}" var="disObj">
+                    <tr Class="{!DistrubtionMap[disObj].monthName}">
+                        <td>{!DistrubtionMap[disObj].monthName}<span style="font-size: 10px;">{!DistrubtionMap[disObj].className}</span></td>
+                        <td Class="date{!DistrubtionMap[disObj].monthName}"><apex:outputText styleClass="currSymbol" value="{!currencySymbol}"/>&nbsp;<apex:inputField styleClass="primaryamount" value="{!DistrubtionMap[disObj].primaryAmount.January__c}" onkeyup="calculateAmount('primaryanualamount','primaryamount','primaryremainingamount',this)" onblur="fixAmount(this)"/></td>
+                        <td Class="date{!DistrubtionMap[disObj].monthName}"><apex:outputText styleClass="currSymbol" value="{!currencySymbol}"/>&nbsp;<apex:inputField styleClass="spouseamount" value="{!DistrubtionMap[disObj].spouseAmount.January__c}" onkeyup="calculateAmount('spouseanualamount','spouseamount','spouseremainingamount',this)" onblur="fixAmount(this)"/></td>
+                        <td Class="date{!DistrubtionMap[disObj].monthName}"><apex:outputText styleClass="currSymbol" value="{!currencySymbol}"/>&nbsp;<apex:inputField styleClass="dependentamount" value="{!DistrubtionMap[disObj].dependentAmount.January__c}" onkeyup="calculateAmount('dependentanualamount','dependentamount','dependentremaingamount',this)" onblur="fixAmount(this)"/></td>
+                    </tr>
+                </apex:repeat>
+            </tbody>
+            </table>
+            </apex:outputPanel>
+            <script>
+            $(".DistributionTable tbody tr").each(function () {
+                $(this).find('td').each (function() {
+                    $(this).find(":input").prop( "disabled", true );
+                })
+            })
+            </script>
+        </apex:pageBlockSection>
+    </apex:pageBlock>
+    </apex:form>
+</apex:page>

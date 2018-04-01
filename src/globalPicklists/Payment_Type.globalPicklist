@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GlobalPicklist xmlns="http://soap.sforce.com/2006/04/metadata">
+    <globalPicklistValues>
+        <fullName>ACH</fullName>
+        <default>false</default>
+    </globalPicklistValues>
+    <globalPicklistValues>
+        <fullName>Check</fullName>
+        <default>false</default>
+    </globalPicklistValues>
+    <globalPicklistValues>
+        <fullName>Cash</fullName>
+        <default>false</default>
+    </globalPicklistValues>
+    <globalPicklistValues>
+        <fullName>Credit Card</fullName>
+        <default>false</default>
+    </globalPicklistValues>
+    <globalPicklistValues>
+        <fullName>Credit Card/ACH</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+    </globalPicklistValues>
+    <globalPicklistValues>
+        <fullName>External Credit Card</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+    </globalPicklistValues>
+    <globalPicklistValues>
+        <fullName>Credit</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+    </globalPicklistValues>
+    <masterLabel>Payment Type</masterLabel>
+    <sorted>false</sorted>
+</GlobalPicklist>

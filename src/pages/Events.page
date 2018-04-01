@@ -1,0 +1,665 @@
+<apex:page controller="EventsController" cache="false">
+    <!-- Scripts -->
+    <apex:includeScript value="{!URLFOR($Resource.jQuery_UI,'/jquery-ui-1.10.3.custom/js/jquery-3.2.1.min.js')}"/>  
+    <apex:includeScript value="{!URLFOR($Resource.jQuery_UI,'/jquery-ui-1.10.3.custom/js/jquery-ui-1.10.3.custom.min.js')}"/>
+
+    <!--Jquery data table-->
+    <apex:includeScript value="{!URLFOR($Resource.jQuery_UI,'/jquery-ui-1.10.3.custom/js/jquery.dataTables.js')}"/> 
+  
+    <apex:includeScript value="{!URLFOR($Resource.eventcalendar,'/fullcalendar.js')}"/>
+
+
+    <apex:includeScript value="{!URLFOR($Resource.eventcalendar,'/moment.js')}"/>
+    
+    <apex:includeScript value="{!URLFOR($Resource.qTip2,'/jquery.qtip.min.js')}"/>   
+   
+    <!-- Stylings -->  
+    <apex:stylesheet value="{!URLFOR($Resource.eventcalendar,'/fullcalendar.css')}"/>
+
+    <apex:stylesheet value="{!URLFOR($Resource.jQuery_UI, '/jquery-ui-1.10.3.custom/css/ui-lightness/jquery-ui-1.10.3.custom.min.css')}"/>
+    <apex:stylesheet value="{!URLFOR($Resource.qTip2, '/jquery.qtip.min.css')}"/>
+
+    <!--Jquery datatable css-->
+    <apex:stylesheet value="{!URLFOR($Resource.jQuery_UI, '/jquery-ui-1.10.3.custom/css/jquery.dataTables.css')}"/>    
+
+    <style>
+        .fc-cell-overlay{
+            background-color:black;
+            opacity:1;
+        }    
+        .fc-border-separate tbody tr td, .fc-border-separate tbody tr th{
+            border-color:black !important;
+        }
+        .fc-border-separate tbody tr.fc-first td, .fc-border-separate tbody tr.fc-first th{
+            border-top-width:1px;
+        }
+        .fc-widget-header.fc-first {
+            border-top-left-radius:5px;
+        }
+        .fc-widget-header.fc-last{
+            border-top-right-radius:5px;
+        }
+        .fc-border-separate tbody tr.fc-last td, .fc-border-separate tbody tr.fc-last th{
+            border-bottom-width:1px;
+            border-bottom-style:solid;
+            border-color:black;
+        }
+        .fc-resourceName{
+            white-space:nowrap;
+            border-bottom-width:0px !important;
+            font-weight: bold !important;           
+        }
+        .fc-resourceName a{
+            color: #002b7f !important;
+            text-decoration: none: !important;
+            cursor: pointer;
+        }
+        .noWrap{
+            white-space:nowrap;
+        }
+        .popup{
+            background-color: white;
+            border-width: 2px;
+            border-style: solid;
+            z-index: 250;
+            padding:10px;
+            position: absolute;
+            top:50%;
+            left:10%;
+            width:80%;
+        }
+        .popupBackground{
+            background-color:black;
+            opacity: 0.20;
+            filter: alpha(opacity = 20);
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: 200;
+        }
+        .datePicker{
+            z-index: 300;
+        }      
+        html{
+            overflow-y: scroll;
+            height:101%;
+        }
+        .fc-widget-content{
+            background-color:rgb(232, 237, 255);
+        }
+        .fc-widget-header{
+            background-color:rgb(185, 201, 254);
+            border-width:1px;
+            border-color:black !important;
+            border-style:solid;
+        }
+        .rowHover{
+            background-color:rgb(208, 218, 253);
+        }
+        .fc-event-title{color:black;}
+   
+        .calctitle{
+            font-size:30px;
+            padding-bottom: 20px !important;
+            color: #002b7f !important;
+        }
+
+    .fc-ltr .fc-event-hori.fc-event-end, .fc-rtl .fc-event-hori.fc-event-start {
+         border-right-width: 0px;
+         border-top-right-radius: 0px;
+         border-bottom-right-radius: 0px; 
+    }
+
+    .fc-ltr .fc-event-hori.fc-event-start, .fc-rtl .fc-event-hori.fc-event-end {
+        border-left-width: 3px;
+        border-top-left-radius: 0px;
+        border-bottom-left-radius: 0px; 
+    }
+
+    .ui-widget-header
+    {
+        background: url('/dummy.png') !important;
+        background: #002b7f !important;        
+        border: 1px solid #002b7f !important;     
+
+    }
+
+    .headerColor .pbSubheader{
+         background-color:#002b7f;
+    } 
+
+    a {
+    text-decoration: none !important;
+    }
+    </style>
+
+    <!-- Javascript -->
+    <script>
+        //Global JS vars
+        var j$ = jQuery.noConflict();
+        var gStartTime;
+        var gEndTime;
+        var gResId;
+
+        function reloadCal(){
+            //JS loading spinner
+            var waitingThing = j$('<div class="waitingSearchDiv" id="el_loading" style="z-index:999;width:100%"> <div class="waitingHolder" style="position:fixed;z-index:999; opacity:1.0;top: 200px; left: 49%; width: 100px; height: 25px;background-color: #fff;border: 1px solid black; border-radius: 5px;padding-top: 10px;color: #000;"> <img class="waitingImage" src="/img/loading.gif" title="Please Wait..." /> <span class="waitingDescription" style="color:#000; opacity:1.0;"> Working... </span> </div> </div>');
+             j$('#waitingHolder').append(waitingThing);
+            
+            j$('#calendar').fullCalendar('refetchEvents');          
+            j$('#waitingHolder').empty();
+            return false;
+        }
+
+        function collapsePBS() {
+            if(document.getElementById('j_id0:THEFORM:PB:FilterSection') != null){
+                twistSection(document.getElementById('j_id0:THEFORM:PB:FilterSection').childNodes[0].childNodes[0]);
+            }
+        }
+        addLoadEvent(collapsePBS);
+
+        function addLoadEvent(func) {
+            var oldonload = window.onload;
+                if (typeof window.onload != 'function') {
+                    window.onload = func;
+                } else {
+                    window.onload = function() {
+                    if (oldonload) {
+                        oldonload();
+                    }
+                    func();
+                }
+            }
+        }
+    </script>
+   	<!--Form for entire page starts-->
+    <apex:form id="THEFORM">       
+        <apex:actionstatus id="loading">
+            <apex:facet name="stop">
+            </apex:facet>
+            <apex:facet name="start">
+                <div class="waitingSearchDiv" id="el_loading" style="z-index:999;width:100%">
+                    <div class="waitingHolder" style="z-index:999; opacity:1.0;position:fixed;top:200px;right:50%;margin-right:-100px; width: 100px;height: 25px;background-color: #fff;border: 1px solid black;border-radius: 5px;padding-top: 10px;color: #000;">
+                        <img class="waitingImage" src="/img/loading.gif" title="Please Wait..." />
+                        <span class="waitingDescription" style="color:#000; opacity:1.0;">Loading...</span>
+                    </div>
+                </div>
+            </apex:facet>
+        </apex:actionstatus>
+            
+        <apex:actionFunction action="{!createReservation}" name="createNewReservationAF" status="loading" rerender="MESSAGES,POPUPHOLDER" immediate="true">
+            <apex:param name="p1" value="" assignTo="{!cStartDt}"/>
+            <apex:param name="p2" value="" assignTo="{!cEndDt}"/>
+            <apex:param name="p3" value="" assignTo="{!cFacId}"/>
+            <apex:param name="p4" value="" assignTo="{!cRTName}"/>
+        </apex:actionFunction>
+
+		<!-- wait loader for filter events-->
+		 <apex:actionStatus id="filterwait">
+		                <apex:facet name="stop"/>
+		                <apex:facet name="start">
+		                    <img class="waitingImage" src="/img/loading.gif" title="Please Wait..."/>
+		                    Selecting
+		                </apex:facet>
+		  </apex:actionStatus>
+
+        <!-- Action function to filter an events-->
+        <apex:actionFunction name="filterEventAF" action="{!getFilteredEvents}" reRender="filtersection,filterResult" status="filterwait"/>
+        
+        <!--Section Header-->
+        <apex:sectionHeader title="Event Calendar"/>
+       <!--Messages Section-->
+        <apex:panelGroup >
+           <apex:pageMessages id="MESSAGES"></apex:pageMessages> 
+        </apex:panelGroup>
+       
+        
+        <!--Filters section-->
+        <apex:pageBlock id="eventsection">
+        <apex:outputPanel styleClass="headerColor">
+        <apex:pageBlockSection title="Filters" columns="1" id="filtersection">
+                <apex:pageBlockSectionItem >
+                    <apex:pageBlockSection columns="2" id="filters">                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputLabel >Start date</apex:outputLabel>
+                        <apex:inputField value="{!filterEvent.StartTime__c}" required="false"/>
+                    </apex:pageBlockSectionItem>
+
+                    <apex:pageBlockSectionItem >
+                        <apex:outputLabel >End date</apex:outputLabel>
+                        <apex:inputField value="{!filterEvent.EndTime__c}" required="false"/>
+                    </apex:pageBlockSectionItem>
+
+                    <apex:pageBlockSectionItem >
+                        <apex:outputLabel >Event Status</apex:outputLabel>
+                        <apex:inputField value="{!filterEvent.Status__c}" required="false"/>
+                    </apex:pageBlockSectionItem>
+
+                    <apex:pageBlockSectionItem >
+                        <apex:outputLabel >Sponsoring member</apex:outputLabel>
+                        <apex:inputField value="{!filterEvent.SponsoringMember__c}" required="false"/>
+                    </apex:pageBlockSectionItem>
+
+                    <apex:pageBlockSectionItem >
+                        <apex:outputLabel >Account to bill</apex:outputLabel>
+                        <apex:outputPanel >
+                        <apex:inputField value="{!filterEvent.Sponsoring_Customer__c}" required="false"/>
+                        <br/><br/>
+                        <button onclick="filterEventAF()" type="button">Apply</button>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>                    
+                    </apex:pageBlockSection>
+                </apex:pageBlockSectionItem>
+          
+                <apex:outputPanel id="filterResult">
+                    <apex:outputPanel rendered="{!filterResultList!=null}">
+                        <apex:pageMessage strength="1" summary="No records found." severity="info" rendered="{!filterResultList.size==0}"/>
+                        <apex:pageBlockTable styleClass="result" value="{!filterResultList}" var="event" rendered="{!filterResultList.size>0}">
+                            <apex:column headerValue="Name"><apex:outputLink value="/{!event.id}">{!event.Name}</apex:outputLink></apex:column>
+                            <apex:column headerValue="Start Time" value="{!event.StartTime__c}"/>
+                            <apex:column headerValue="Facility" value="{!event.Location__c}"/>
+                            <apex:column headerValue="End Time" value="{!event.EndTime__c}"/>
+                            <apex:column headerValue="Status" value="{!event.Status__c}"/>
+                            <apex:column headerValue="Sponsoring member" value="{!event.SponsoringMember__c}"/>
+                            <apex:column headerValue="Account to bill" value="{!event.Sponsoring_Customer__c}"/>
+                        </apex:pageBlockTable>
+                        <script>
+                            j$('table.result').dataTable({
+                                sPaginationType: 'full_numbers',
+                                'aLengthMenu':[[5,10,25,-1],[5,10,25,'All']],
+                                'iDisplayLength':5,
+                                'aaSorting':[[1, 'asc']]
+                            });
+                        </script>
+                    </apex:outputPanel>
+                </apex:outputPanel>
+            </apex:pageBlockSection>
+        </apex:outputPanel>
+
+            <!--Calendar Section Start-->
+             <apex:outputPanel styleClass="headerColor">
+            <apex:pageBlockSection id="CALENDARPBS" title="Calendar" columns="1">                               
+              	<!--Top section on the reservation calendar-->
+                <apex:pageBlockSectionItem >
+                    <apex:panelGroup >
+                        <span>
+                            <div style="width:100%;display:table;">
+                                <div style="display:table-row;">
+                                		<!--TOP 3 Datepicker-->
+                                        <div id="CALENDARDATEPICKER" style="display:table-cell;width:232px;padding-left:20px;"/>
+                                        <div id="CALENDARDATEPICKER2" style="display:table-cell;width:232px;"/>
+                                        <div id="CALENDARDATEPICKER3" style="display:table-cell;width:250px;"/>
+                                    	<!--Top 3 date pickers-->
+
+                                    <!--Right side labels with colours-->
+                                    <div style="display:table-cell">
+                                        <table style="text-align:center;width:75%;" cellspacing="5px;">
+                                            <tr><td><div><b style="color: #002b7f; font-size:30px;">Legend</b></div></td></tr>
+                                             <tr><td><div style="margin-left:auto;margin-right:auto;width:100%;background-color:#FF7744; font-size:20px; color: white;">Tentative</div></td></tr>
+                                            <tr><td><div style="margin-left:auto;margin-right:auto;width:100%;background-color:#800080; font-size:20px; color:white;">Prospective</div></td></tr>
+                                            <tr><td><div style="margin-left:auto;margin-right:auto;width:100%;background-color:#008000; font-size:20px; color:white;"> Confirmed and Re-opened</div></td></tr>
+
+                                            <tr><td><div style="margin-left:auto;margin-right:auto;width:100%;background-color:#808080; font-size:20px; color:white;">Posted/Closed</div></td></tr>  
+
+                                             <tr><td><div style="margin-left:auto;margin-right:auto;width:100%;background-color:#002b7f; font-size:20px; color:white;">Setup and  Cleanup time</div></td></tr>                                           
+                                        </table>
+                                    </div>
+                                     <!--Left section for labels ends here-->
+                                </div>
+                            </div>
+                        </span>
+                    </apex:panelGroup>
+                </apex:pageBlockSectionItem>
+                <!--Top section on the reservation calendar-->                        
+              	<!--Reservation calendar-->
+                <div id="calendar"/>                
+                <script>
+               	var j$ = jQuery.noConflict();
+                    var currentTime = new Date();
+                    var avoidRecursion = false;                    
+                    
+                    var resources = [];
+                    resources = JSON.parse("{!JSENCODE(resources)}");
+
+                    for(j=0;j<resources.length;j++)
+                    {                        
+                        resources[j].name = '<a href=/' + resources[j].id + '>' + resources[j].name  + '</a>';
+                    }
+
+                    //alert(JSON.stringify(resources));
+
+                    j$('#CALENDARDATEPICKER').datepicker({
+                        inline: true,
+                        changeMonth: true,
+                        changeYear: true,
+                        onSelect: function(dateText,inst){
+                            j$('#CALENDARDATEPICKER').append('<span class="datePickerStatus">'
+                                                   + '<img class="waitingImage" src="/img/loading.gif"/>'
+                                                   + '</span>');
+                            var year = dateText.substring(6,10);
+                            var month = dateText.substring(0,2) - 1;
+                            var day = dateText.substring(3,5);
+                            var dt = new Date(year,month,day);
+                            j$('#calendar').fullCalendar('gotoDate', dt);
+                        },                        
+                        onChangeMonthYear:function(year, month, inst){
+                            if(avoidRecursion == false){
+                                avoidRecursion = true;
+                                j$('#CALENDARDATEPICKER').append('<span class="datePickerStatus">'
+                                                       + '<img class="waitingImage" src="/img/loading.gif"/>'
+                                                       + '</span>');
+                                var dt = new Date(year,month-1,1);
+                                j$("#CALENDARDATEPICKER2").datepicker();
+                                j$("#CALENDARDATEPICKER2").datepicker("setDate", new Date(year,month,1));
+                                j$("#CALENDARDATEPICKER3").datepicker();
+                                j$("#CALENDARDATEPICKER3").datepicker("setDate", new Date(year,month+1,1));
+                                j$('#calendar').fullCalendar('refetchEvents');
+                            }
+                            if(avoidRecursion){
+                                avoidRecursion = false;
+                            }
+                        }
+                    });
+
+                    j$('#CALENDARDATEPICKER2').datepicker({
+                        inline: true,
+                        changeMonth: false,
+                        changeYear: false,
+                        defaultDate: new Date(currentTime.getFullYear(), currentTime.getMonth()+1, 1),
+                        onSelect: function(dateText,inst){
+                            j$('#CALENDARDATEPICKER2').append('<span class="datePickerStatus">'
+                                                   + '<img class="waitingImage" src="/img/loading.gif"/>'
+                                                   + '</span>');
+                            var year = dateText.substring(6,10);
+                            var month = dateText.substring(0,2) - 1;
+                            var day = dateText.substring(3,5);
+                            var dt = new Date(year,month,day);
+                            j$('#calendar').fullCalendar('gotoDate', dt);
+                        }
+                    });
+						
+                    j$('#CALENDARDATEPICKER3').datepicker({
+                        inline: true,   
+                        changeMonth: true,
+                        changeYear: true,
+                        defaultDate: new Date(currentTime.getFullYear(), currentTime.getMonth()+2, 1),
+                        onSelect: function(dateText,inst){
+                            j$('#CALENDARDATEPICKER3').append('<span class="datePickerStatus">'
+                                                   + '<img class="waitingImage" src="/img/loading.gif"/>'
+                                                   + '</span>');
+                            var year = dateText.substring(6,10);
+                            var month = dateText.substring(0,2) - 1;
+                            var day = dateText.substring(3,5);
+                            var dt = new Date(year,month,day);
+                            j$('#calendar').fullCalendar('gotoDate', dt);
+                        },
+                        onChangeMonthYear:function(year, month, inst){
+                            if(avoidRecursion == false){
+                                avoidRecursion = true;
+                                j$('#CALENDARDATEPICKER').append('<span class="datePickerStatus">'
+                                                       + '<img class="waitingImage" src="/img/loading.gif"/>'
+                                                       + '</span>');
+                                var dt = new Date(year,month-1,1);
+                                j$("#CALENDARDATEPICKER2").datepicker();
+                                j$("#CALENDARDATEPICKER2").datepicker("setDate", new Date(year,month-2,1));
+                                j$("#CALENDARDATEPICKER").datepicker();
+                                j$("#CALENDARDATEPICKER").datepicker("setDate", new Date(year,month-3,1));
+                                j$('#calendar').fullCalendar('refetchEvents');
+                            }
+                            if(avoidRecursion){
+                                avoidRecursion = false;
+                            }
+                        }
+                    });
+                    
+                    j$('#CALENDARDATEPICKER').find('.ui-datepicker-next').remove();
+                    j$('#CALENDARDATEPICKER2').find('.ui-datepicker-prev').remove();
+                    j$('#CALENDARDATEPICKER2').find('.ui-datepicker-next').remove();
+                    j$('#CALENDARDATEPICKER3').find('.ui-datepicker-prev').remove();
+                    
+                    j$('#calendar').fullCalendar({
+                        header: {
+                            left: 'prev,next today',
+                            center: 'title',
+                            right: 'resourceDay,resourceWeek,resourceMonth'
+                        },
+                        
+                        defaultView: 'resourceDay',
+                        allDayDefault: false,
+                        lazyFetching: false,
+                        editable: true,
+                        disableDragging: true,
+                        firstDay: 1,
+                        selectable: true,
+                        selectHelper: true,
+                        minTime: {!startHour},
+                        maxTime: {!endHour},
+                        ignoreTimezone: false,                  
+                        slotMinutes: {!slotMinutes},
+                        timeFormat: '',
+                        resources: resources,                    
+                        events: function(start,end,callback){                                                                          
+                            //JS loading spinner                           
+                            var waitingThing = j$('<div class="waitingSearchDiv" id="el_loading" style="z-index:999;width:100%"> <div class="waitingHolder" style="position:fixed;z-index:999; opacity:1.0;top: 200px; left: 49%; width: 150px; height: 25px;background-color: #fff;border: 1px solid black; border-radius: 5px;padding-top: 10px;color: #000;"> <img class="waitingImage" src="/img/loading.gif" title="Please Wait..." /> <span class="waitingDescription" style="color:#000; opacity:1.0;"> Loading Calendar... </span> </div> </div>');
+
+                            j$('#waitingHolder').append(waitingThing);
+                                                                                              
+                           Visualforce.remoting.Manager.invokeAction(
+                                '{!$RemoteAction.EventsController.getEvents}',
+                                start.getTime(),end.getTime(),['Sponsored Event'],['Event'],
+                                function(result,jsEvent){
+                                    callback(JSON.parse(result)); //the result is the json array of events for the
+
+                                },
+                                {escape: false}
+                            );
+
+                        },
+                        eventRender: function(event,element){                            
+                            element.qtip({
+                                content: event.tooltip,
+                                position: {
+                                    target: 'mouse',
+                                    adjust: {x:15,y:15}
+                                }
+                            });
+                           
+                        },                        
+                        eventAfterAllRender: function(view){                            
+                            j$('.datePickerStatus').remove();
+                            j$('#waitingHolder').empty();
+                            j$('#CALENDARDATEPICKER').find('.ui-datepicker-next').remove();
+                            j$('#CALENDARDATEPICKER2').find('.ui-datepicker-prev').remove();
+                            j$('#CALENDARDATEPICKER2').find('.ui-datepicker-next').remove();
+                            j$('#CALENDARDATEPICKER3').find('.ui-datepicker-prev').remove();
+                        },
+                       select: function(start, end, allDay, jsEvent, view, resource) {                                                                                
+                            var workingView = j$('#calendar').fullCalendar('getView');
+                            if(workingView.name == 'resourceDay'){
+                                gStartTime = start.getTime();
+                                gEndTime = end.getTime();
+                                gResId = escape(resource.id);
+                                createNewReservationAF(gStartTime,gEndTime,gResId,'Sponsored Event');                            
+                            }
+                        },
+                        eventDrop: function( event, dayDelta, minuteDelta, allDay, revertFunc, jsEvent, ui, resource) {
+                            //Call the controller method to move the event                          
+                            if(j$.isArray(event.resource)){
+                                event.resource = event.resource[0];
+                            }                                                    
+                        },
+                        eventResize: function( event, dayDelta, minuteDelta, revertFunc, jsEvent, ui, view ) {
+                            //Call the controller method to move the event
+                            if(j$.isArray(event.resource)){
+                                event.resource = event.resource[0];
+                            }                          
+                        },
+
+                        columnFormat: {
+                                resourceDay: 'h(:mm)t'
+                        },
+                        eventClick: function(event,jsEvent,view){                           
+                            //Call the controller method to edit the event
+                            if(j$.isArray(event.resource)){
+                                event.resource = event.resource[0];
+                            }
+                            if(event.type == 'futureReservation' && (event.reservation.RecordType.Name == 'Event' || event.reservation.RecordType.Name == 'Sponsored Event')){                                 editReservationAF(JSON.stringify(event));
+                            }
+                        },
+
+                        viewDisplay: function(view){
+                            //Set all of the items to the same width
+                            var cellWidth = 0;
+                            var numCells = 0;
+                            j$('.fc-view-' + view.name).find('.fc-widget-header').each(function(i,obj){
+                                //Set the timeslot text to blank if there is a : in it
+                                if(view.name == 'resourceDay' && obj.textContent.indexOf(':') !== -1){
+                                   obj.textContent = '';
+                                }
+                                if(obj.clientWidth > cellWidth){
+                                    cellWidth = obj.clientWidth;
+                                }
+                                numCells++;
+                            });
+                            //Get the width of the entire table and the width of the facility column, calculate the biggest size for the cells and use that
+                            var tableWidth = j$('.fc-border-separate').width();
+                            var resourceColWidth = 0;
+                            j$('td.fc-resourceName').each(function(i,obj){
+                                var item = j$(obj);     // just first item
+                                var pos = item.css("position");   // save original value
+                                item.css("position", "absolute");
+                                var objWidth = item.width();
+                                item.css("position", pos);
+                                if(objWidth > resourceColWidth){
+                                    resourceColWidth = objWidth;
+                                }
+                            });
+                            //Apply the size to all the resource name cells and increase the grid cell size to the rest
+                            cellWidth = (tableWidth - resourceColWidth) / numCells;
+                            j$('td.fc-resourceName').width(resourceColWidth);
+                            j$('.fc-view-' + view.name).find('.fc-widget-header').width(cellWidth); //Evenly space all of the timeslots displayed in the grid
+                        }
+                    })
+
+                    //Change buttons to Month Week Day
+                    j$('.fc-button-resourceMonth').html('Month');
+                    j$('.fc-button-resourceWeek').html('Week');
+                    j$('.fc-button-resourceDay').html('Day');
+                    j$('.fc-button-today').html('Today');
+                    j$('.fc-header-center').addClass('calctitle');
+                    //Add hover classes to the rows
+                    j$('.fc-border-separate tr').hover(function() {
+                        j$(this).find('.fc-widget-content').addClass('rowHover');
+                    }, function() {
+                        j$(this).find('.fc-widget-content').removeClass('rowHover');
+                    });
+                    
+                    //go to the current day on load for the calendar to get past the events not rendering full scale
+                    j$(document).ready(function(){
+
+                        var dt = new Date();
+                        var otherDt = new Date(dt.getTime() + (24*60*60*1000));
+                        j$('#calendar').fullCalendar('gotoDate', otherDt);
+                        j$('#calendar').fullCalendar('gotoDate', dt);                       
+                    });
+                </script>
+            </apex:pageBlockSection>
+            </apex:outputPanel>
+        </apex:pageBlock>
+    </apex:form>
+
+    <apex:outputPanel id="POPUPHOLDER">       
+        <apex:outputPanel styleClass="popupBackground" id="POPUPBACKGROUND" rendered="{!cShowPopup}"/>
+        <apex:outputPanel styleClass="popup" id="POPUP" rendered="{!cShowPopup}">        
+            <apex:pageBlock >
+                <apex:form >                   
+                    <apex:pageMessages id="POPUPMESSAGES"></apex:pageMessages> 
+                    <apex:pageBlockSection columns="1">
+                        <apex:outputPanel layout="block" style="text-align:center;">
+                            <apex:commandButton status="loading" style="width:100px;" action="{!gotoDetails}" value="Details" rendered="{!cReservation.id != null}"/>
+
+                            <apex:commandButton status="loading" style="width:100px;" action="{!addRoom}" value="Add Room" rendered="{!cReservation.id != null}" immediate="true"/>
+
+                            <apex:commandButton status="loading" style="width:100px;" action="{!saveReservation}" value="Save" rerender="POPUPHOLDER" oncomplete="buttonsEnabled(true);"/>
+
+                            <apex:commandButton status="loading" style="width:100px;" action="{!closePopup}" value="Close Window" rerender="POPUPHOLDER, calendar" immediate="true" oncomplete="notifit_dismiss();"/>  
+
+                        </apex:outputPanel>
+                    </apex:pageBlockSection>
+
+                    <apex:actionStatus id="Selecting">
+                        <apex:facet name="stop"/>
+                        <apex:facet name="start">
+                            <img class="waitingImage" src="/img/loading.gif" title="Please Wait..."/>
+                            Selecting
+                        </apex:facet>
+                    </apex:actionStatus>
+                    
+                    <apex:pageBlockSection title="Event Details">
+                        <apex:pageBlockSectionItem >
+                            <apex:outputLabel >Reservation Name</apex:outputLabel>
+                            <apex:outputPanel layout="block" styleClass="requiredInput">
+                                <div class="requiredBlock"></div>
+                                <apex:inputField value="{!cReservation.Name}"/>
+                            </apex:outputPanel>
+                        </apex:pageBlockSectionItem>      
+
+                        <apex:pageBlockSectionItem >
+                            <apex:outputLabel >Sponsoring Member</apex:outputLabel>
+                             <apex:outputPanel layout="block" styleClass="requiredInput">
+                                <div class="requiredBlock"></div>
+                                <apex:inputField value="{!cReservation.SponsoringMember__c}"/>
+                            </apex:outputPanel>                           
+                        </apex:pageBlockSectionItem>
+                        
+                        <apex:pageBlockSectionItem >                      
+                            <apex:outputLabel >Account to Bill</apex:outputLabel>                            
+                             <apex:outputPanel layout="block" styleClass="requiredInput">
+                                <div class="requiredBlock"></div>
+                                <apex:inputField value="{!cReservation.Sponsoring_Customer__c}"/>
+                            </apex:outputPanel>                            
+                        </apex:pageBlockSectionItem>
+
+                        <apex:inputField value="{!cReservation.Location__c}"/>
+                                            
+                        <apex:inputField value="{!cReservation.Function__c}"/>
+                        
+                        <apex:pageBlockSectionItem rendered="{!cRTName == 'Sponsored Event'}">
+                            <apex:outputLabel >Primary Contact Name</apex:outputLabel>
+                            <apex:inputField value="{!cReservation.Primary_Contact__c}"/>                            
+                        </apex:pageBlockSectionItem>
+
+                        <apex:inputField id="STARTTIMEJS" value="{!cReservation.StartTime__c}"/>
+                        
+                        <apex:inputField rendered="{!cRTName == 'Event'}" value="{!cReservation.Setup_Time__c}"/>
+                        
+                        <apex:pageBlockSectionItem rendered="{!cRTName == 'Sponsored Event'}">
+                            <apex:outputLabel >Payment Contact Name</apex:outputLabel>
+                            <apex:inputField value="{!cReservation.Payment_Contact__c}"/>                           
+                        </apex:pageBlockSectionItem>
+
+                        <apex:inputField value="{!cReservation.EndTime__c}"/>                        
+                        <apex:inputField value="{!cReservation.Member_Revenue__c}"/>
+
+                        <apex:inputField value="{!cReservation.Minimum_Guarantee_Guests__c}"/>                       
+                        <apex:inputField value="{!cReservation.Tax_Form_Received__c}">
+                        </apex:inputField>
+                        <apex:inputField value="{!cReservation.Max_Seats__c}"/>    
+                        <apex:inputField value="{!cReservation.Contract_Due_Date__c}"/>    
+                        <apex:inputField value="{!cReservation.Deposit_Due_Date__c}"/>    
+
+                        <apex:inputField value="{!cReservation.Service_Manager__c}"/>
+                        <apex:inputField value="{!cReservation.Setup_Time__c}"/>    
+                        <apex:inputField value="{!cReservation.Catering_Manager__c}"/>                        
+                        <apex:inputField value="{!cReservation.Cleanup_Time__c}"/>                   
+                                                                                                
+                        <apex:inputField value="{!cReservation.Tax_Form_Received_Date__c}"/>                               
+                    </apex:pageBlockSection>
+                </apex:form>
+            </apex:pageBlock>                                 
+        </apex:outputPanel>
+    </apex:outputPanel>     
+    <div id="waitingHolder"/>
+    </apex:page>

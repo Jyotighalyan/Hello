@@ -1,0 +1,304 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <actionOverrides>
+        <actionName>Accept</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>CancelEdit</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>Clone</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>Delete</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>Edit</actionName>
+        <content>CreateVendInvLine</content>
+        <skipRecordTypeSelect>false</skipRecordTypeSelect>
+        <type>Visualforce</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>Follow</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>List</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>New</actionName>
+        <content>CreateVendInvLine</content>
+        <skipRecordTypeSelect>false</skipRecordTypeSelect>
+        <type>Visualforce</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>SaveEdit</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>Tab</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>View</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <allowInChatterGroups>false</allowInChatterGroups>
+    <compactLayoutAssignment>SYSTEM</compactLayoutAssignment>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <enableActivities>false</enableActivities>
+    <enableBulkApi>true</enableBulkApi>
+    <enableEnhancedLookup>true</enableEnhancedLookup>
+    <enableFeeds>false</enableFeeds>
+    <enableHistory>false</enableHistory>
+    <enableReports>true</enableReports>
+    <enableSearch>true</enableSearch>
+    <enableSharing>true</enableSharing>
+    <enableStreamingApi>true</enableStreamingApi>
+    <fields>
+        <fullName>Account_Name__c</fullName>
+        <externalId>false</externalId>
+        <formula>Financial_Account__r.Name</formula>
+        <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
+        <label>Account Name</label>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>Text</type>
+        <unique>false</unique>
+    </fields>
+    <fields>
+        <fullName>Account_Number__c</fullName>
+        <externalId>false</externalId>
+        <formula>Financial_Account__r.Account_Number__c</formula>
+        <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
+        <label>Account Number</label>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>Text</type>
+        <unique>false</unique>
+    </fields>
+    <fields>
+        <fullName>Amount_Remaining_To_Pay__c</fullName>
+        <defaultValue>0</defaultValue>
+        <description>this will display amount remaining to be paid by the user</description>
+        <externalId>false</externalId>
+        <label>Amount Remaining To Distribute</label>
+        <precision>18</precision>
+        <required>false</required>
+        <scale>2</scale>
+        <trackTrending>false</trackTrending>
+        <type>Currency</type>
+    </fields>
+    <fields>
+        <fullName>Amount__c</fullName>
+        <externalId>false</externalId>
+        <label>Amount</label>
+        <precision>18</precision>
+        <required>false</required>
+        <scale>2</scale>
+        <trackTrending>false</trackTrending>
+        <type>Currency</type>
+    </fields>
+    <fields>
+        <fullName>Description__c</fullName>
+        <externalId>false</externalId>
+        <label>Description</label>
+        <length>255</length>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>Text</type>
+        <unique>false</unique>
+    </fields>
+    <fields>
+        <fullName>Financial_Account__c</fullName>
+        <deleteConstraint>Restrict</deleteConstraint>
+        <externalId>false</externalId>
+        <label>Financial Account</label>
+        <lookupFilter>
+            <active>true</active>
+            <filterItems>
+                <field>Financial_Account__c.Active__c</field>
+                <operation>equals</operation>
+                <value>True</value>
+            </filterItems>
+            <isOptional>false</isOptional>
+        </lookupFilter>
+        <referenceTo>Financial_Account__c</referenceTo>
+        <relationshipLabel>Vendor Invoice Lines (Financial Account)</relationshipLabel>
+        <relationshipName>Vendor_Invoice_Lines</relationshipName>
+        <required>true</required>
+        <trackTrending>false</trackTrending>
+        <type>Lookup</type>
+    </fields>
+    <fields>
+        <fullName>Financial_Journal_Line__c</fullName>
+        <deleteConstraint>SetNull</deleteConstraint>
+        <externalId>false</externalId>
+        <label>Financial Journal Line</label>
+        <referenceTo>Financial_Journal_Line__c</referenceTo>
+        <relationshipLabel>Vendor Invoice Lines</relationshipLabel>
+        <relationshipName>Vendor_Invoice_Lines</relationshipName>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>Lookup</type>
+    </fields>
+    <fields>
+        <fullName>Insert_Index__c</fullName>
+        <externalId>false</externalId>
+        <label>Insert Index</label>
+        <length>255</length>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>Text</type>
+        <unique>false</unique>
+    </fields>
+    <fields>
+        <fullName>Payment_Account_Name__c</fullName>
+        <externalId>false</externalId>
+        <formula>Payment_Financial_Account__r.Name</formula>
+        <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
+        <label>Payment Account Name</label>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>Text</type>
+        <unique>false</unique>
+    </fields>
+    <fields>
+        <fullName>Payment_Account_Number__c</fullName>
+        <externalId>false</externalId>
+        <formula>Payment_Financial_Account__r.Account_Number__c</formula>
+        <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
+        <label>Payment Account Number</label>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>Text</type>
+        <unique>false</unique>
+    </fields>
+    <fields>
+        <fullName>Payment_Financial_Account__c</fullName>
+        <deleteConstraint>SetNull</deleteConstraint>
+        <externalId>false</externalId>
+        <label>Payment Financial Account</label>
+        <lookupFilter>
+            <active>true</active>
+            <filterItems>
+                <field>Financial_Account__c.Active__c</field>
+                <operation>equals</operation>
+                <value>True</value>
+            </filterItems>
+            <isOptional>false</isOptional>
+        </lookupFilter>
+        <referenceTo>Financial_Account__c</referenceTo>
+        <relationshipLabel>Vendor Invoice Lines (Payment Financial Account)</relationshipLabel>
+        <relationshipName>Vendor_Invoice_Lines1</relationshipName>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>Lookup</type>
+    </fields>
+    <fields>
+        <fullName>Payment_Type__c</fullName>
+        <externalId>false</externalId>
+        <label>Payment Type</label>
+        <picklist>
+            <picklistValues>
+                <fullName>Check</fullName>
+                <default>true</default>
+            </picklistValues>
+            <picklistValues>
+                <fullName>Credit Card</fullName>
+                <default>false</default>
+            </picklistValues>
+            <picklistValues>
+                <fullName>ACH</fullName>
+                <default>false</default>
+            </picklistValues>
+            <sorted>false</sorted>
+        </picklist>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>Picklist</type>
+    </fields>
+    <fields>
+        <fullName>Post_Date__c</fullName>
+        <externalId>false</externalId>
+        <label>Post Date</label>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>Date</type>
+    </fields>
+    <fields>
+        <fullName>Posted__c</fullName>
+        <defaultValue>false</defaultValue>
+        <externalId>false</externalId>
+        <label>Posted</label>
+        <trackTrending>false</trackTrending>
+        <type>Checkbox</type>
+    </fields>
+    <fields>
+        <fullName>Use_Tax__c</fullName>
+        <defaultValue>false</defaultValue>
+        <externalId>false</externalId>
+        <label>Use Tax</label>
+        <trackTrending>false</trackTrending>
+        <type>Checkbox</type>
+    </fields>
+    <fields>
+        <fullName>Vendor_Invoice_Check__c</fullName>
+        <deleteConstraint>SetNull</deleteConstraint>
+        <externalId>false</externalId>
+        <label>Vendor Invoice Check</label>
+        <referenceTo>Vendor_Invoice_Check__c</referenceTo>
+        <relationshipLabel>Vendor Invoice Lines</relationshipLabel>
+        <relationshipName>Vendor_Invoice_Lines</relationshipName>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>Lookup</type>
+    </fields>
+    <fields>
+        <fullName>Vendor_Invoice__c</fullName>
+        <externalId>false</externalId>
+        <label>Vendor Invoice</label>
+        <referenceTo>Vendor_Invoice__c</referenceTo>
+        <relationshipLabel>Vendor Invoice Lines</relationshipLabel>
+        <relationshipName>Vendor_Invoice_Lines</relationshipName>
+        <relationshipOrder>0</relationshipOrder>
+        <reparentableMasterDetail>false</reparentableMasterDetail>
+        <trackTrending>false</trackTrending>
+        <type>MasterDetail</type>
+        <writeRequiresMasterRead>false</writeRequiresMasterRead>
+    </fields>
+    <label>Vendor Invoice Line</label>
+    <nameField>
+        <displayFormat>VNDRSTMTLNE-{0000000}</displayFormat>
+        <label>Vendor Invoice Line Name</label>
+        <type>AutoNumber</type>
+    </nameField>
+    <pluralLabel>Vendor Invoice Lines</pluralLabel>
+    <searchLayouts/>
+    <sharingModel>ControlledByParent</sharingModel>
+    <validationRules>
+        <fullName>PaymentFinancialAccountValida</fullName>
+        <active>true</active>
+        <description>Payment financial account is required for Invoice Lines paid by Credit Card or ACH.</description>
+        <errorConditionFormula>IF((TEXT(Payment_Type__c) = &apos;Credit Card&apos; ||   TEXT(Payment_Type__c) = &apos;ACH&apos; )  &amp;&amp;   ISBLANK(Payment_Financial_Account__c ) 
+,true
+,false)</errorConditionFormula>
+        <errorDisplayField>Payment_Financial_Account__c</errorDisplayField>
+        <errorMessage>Payment financial account is required for Invoice Lines paid by Credit Card or ACH.</errorMessage>
+    </validationRules>
+    <validationRules>
+        <fullName>paymentAccountOnlyForCC_or_ACH</fullName>
+        <active>true</active>
+        <description>Payment financial account required only for Invoice Lines paid by Credit Card or ACH.</description>
+        <errorConditionFormula>IF(TEXT(Payment_Type__c) = &apos;Check&apos;  &amp;&amp;   !ISBLANK(Payment_Financial_Account__c ) 
+,true
+,false)</errorConditionFormula>
+        <errorDisplayField>Payment_Financial_Account__c</errorDisplayField>
+        <errorMessage>Payment financial account is required only for Invoice Lines paid by Credit Card or ACH.</errorMessage>
+    </validationRules>
+</CustomObject>

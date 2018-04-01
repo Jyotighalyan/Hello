@@ -1,0 +1,62 @@
+<apex:page showHeader="true" sidebar="true" controller="AccountsPayableController">
+ <!-- Scripts -->
+    <apex:includeScript value="{!URLFOR($Resource.jQuery_UI,'/jquery-ui-1.10.3.custom/js/jquery-3.2.1.min.js')}"/>
+    <apex:stylesheet value="{!URLFOR($Resource.foretees, '/main.css')}"/>
+    <apex:stylesheet value="{!URLFOR($Resource.foretees, '/ProgressBar/progressbar.css')}"/>
+
+	<script type="text/javascript">
+		function confirmPostDate()
+		{
+			if($('[id$="postdate"]').val()=='')
+			{
+				alert('Post date can not be empty');
+				return false;
+			}
+			if(confirm('You have changed the Post Date for this Journal Entry, \nClick Ok to accept this change or \nCancel to keep the original post date.'))
+			{
+				updateFJEPostDate();
+			}
+			else
+			{
+				cancelUpdate();
+			}		
+		}
+
+	</script>
+	<apex:form >
+		<apex:outputPanel styleClass="popupBg" layout="block" style="z-index: 90">
+			<apex:outputPanel styleClass="popup1" layout="block" style="top: 95px !important;">
+			 <br/>
+					<br/>
+				<div class="address-close-container">
+                    <a class="cart address-close" href="/{!$CurrentPage.parameters.FjeId}">
+                        &times;
+                    </a>
+                </div>
+				<apex:PageBlock rendered="{!IF($CurrentPage.parameters.FjeId!=null, True, False)}">
+					<br/><apex:pageMessages id="Msg"/>
+					<apex:outputPanel styleClass="head" rendered="{!finJeEntry.Posted__c}">
+						<apex:pageBlockSection title="Update Posted Date">
+							<apex:pageBlockSectionItem /><apex:pageBlockSectionItem />
+							<apex:pageBlockSectionItem ><apex:outputLabel >Post Date : </apex:outputLabel>
+							<apex:inputField value="{!finJeEntry.Post_Date__c}" id="postdate"/></apex:pageBlockSectionItem><br/>
+							<br/><br/>
+							<apex:commandButton StyleClass="changePostDate" value="Update" onclick="confirmPostDate();return false;"/>
+						</apex:pageBlockSection>
+					</apex:outputPanel>
+					<apex:outputPanel rendered="{!finJeEntry.Posted__c==false}">
+						<apex:outputText >Post Date can not be changed as this Financial Entry is not posted.</apex:outputText>
+					</apex:outputPanel>
+				</apex:PageBlock>
+			</apex:outputPanel>
+		</apex:outputPanel>
+	<apex:actionFunction name="cancelUpdate" action="{!cancelEdit}" reRender="nothing"/>
+	<apex:actionFunction name="updateFJEPostDate" action="{!UpdateFinJEPostDate}" reRender="msg"/>
+	<script>
+		if('{!erInFinJeSetup}'=='true')
+		{
+			$('.changePostDate').prop("disabled", true);
+		}
+	</script>
+	</apex:form>
+</apex:page>

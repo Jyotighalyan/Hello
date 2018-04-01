@@ -1,0 +1,56 @@
+<apex:page standardStyleSheets="false" renderAs="pdf" showHeader="false" sidebar="false"  controller="GeneralLedgerReportCont" action="{!LoadEntries}"  applyBodyTag="false">
+<table id="existCheckTable" class="existCheckTable INVOICETABLE list" border="1" cellpadding="0" cellspacing="0">
+        <thead>
+            <tr class="headerRow">
+                <th class="headerRow" colspan="6">General Ledger Report for {!txnRec.Date__c} - {!txnRec.Check_Date__c}</th>
+            </tr>
+            <tr class="headerRow">
+                <th class="headerRow">Date</th>
+                <th class="headerRow">JR Audit#</th>
+                <th class="headerRow">Description</th>
+                <th class="headerRow">Debit</th>
+                <th class="headerRow">Credit</th>
+                <th class="headerRow">Balance</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr class="totalRow">
+                <td class="totalRow"></td>
+                <td class="totalRow"></td>
+                <td class="totalRow">Opening Balance</td>
+                <td class="totalRow"></td>
+                <td class="totalRow"></td>
+                <td class="totalRow">{!starting_bal}</td>
+            </tr>
+            <apex:repeat value="{!entries}" var="p">
+                <tr>
+                    <td>
+                        <apex:outputText value="{!p.Post_Date__c }">
+                        </apex:outputText> 
+                    </td>
+                    <td>{!p.name}</td>
+                    <td>{!p.Description__c}</td>
+                    <td>{!p.Debit__c}</td>
+                    <td>{!p.Credit__c}</td>
+                    <td></td>
+                </tr>
+            </apex:repeat>
+            <tr class="totalRow">
+                <td class="totalRow"></td>
+                <td class="totalRow"></td>
+                <td class="totalRow">Net Change</td>
+                <td class="totalRow">{!total_debit}</td>
+                <td class="totalRow">{!total_credit}</td>
+                <td class="totalRow">{!current_balance}</td>
+            </tr>
+            <tr class="totalRow">
+                <td class="totalRow"></td>
+                <td class="totalRow"></td>
+                <td class="totalRow">Ending Balance</td>
+                <td class="totalRow"></td>
+                <td class="totalRow"></td>
+                <td class="totalRow">{!totalBalance}</td>
+            </tr>
+        </tbody>
+    </table>
+</apex:page>

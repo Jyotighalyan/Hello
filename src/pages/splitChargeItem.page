@@ -1,0 +1,83 @@
+<apex:page showHeader="true" sidebar="true" standardController="Revenue_Split__c" extensions="splitChargeItemController">
+    <apex:includescript value="{!URLFOR($Resource.jqueryDatatable_3embed,'/3embed/jquery-1.11.1.min.js')}" />
+    
+    <div class="bPageTitle"><div class="content">
+        <img src="/img/s.gif" class="pageTitleIcon" />
+        <h1 class="edit">Split Charge Item Price</h1><br/>
+        <h2 class="new">New Split Charge Item Price</h2>
+        </div></div>
+    <style>
+        .content {
+        float: left;
+        vertical-align: middle;
+        padding-left: 5px;
+        width: 70%;
+        display: inline-block;
+        padding: 15px;
+        }
+        .new{
+        margin-left: 37px;  
+        font-size: 1.8em;
+        font-weight: normal;
+        line-height: 1.1em;
+        margin-top: -10px;
+        }
+        .pageTitleIcon {
+        margin-top: 2px;    
+        background-image: url(/img/sprites/master.png);
+        background-position: 0 -1058px;
+        width: 32px;
+        height: 32px;
+        display: inline;
+        float: left;
+        width: 32px;
+        margin-right: 5px;
+        }
+        .edit{
+        margin-left: 37px;  
+        font-size: .9em;
+        font-weight: bold;
+        color: #4a4a56;
+        padding-left: 1px;
+        }
+    </style>
+    <script>
+    var totalAmount;
+    $(document).ready(function(){
+        $('[id$=AmountRem]').prop('disabled', true);
+        totalAmount = parseFloat('{!JSENCODE(HTMLENCODE(TEXT(chargeItem.Price__c)))}') -  parseFloat('{!JSENCODE(HTMLENCODE(TEXT(chargeItem.Price_Split__c)))}'); 
+        $('[id$=AmountRem]').val(parseFloat(totalAmount).toFixed(2));
+        if('{!isEditBoolean}'=='true')
+            totalAmount = totalAmount + parseFloat('{!revSplit.Split_Amount__c}')
+            })
+    function updateAmountRemaining(amnt){
+        
+        var currentAmount = $(amnt).val();
+        var amntReUp = totalAmount-currentAmount;
+        
+        if(amntReUp<0){
+            alert('Amount should not be greater than the charge item\'s price amount.');
+            $('[id$=Amount]').val(totalAmount.toFixed(2));
+            $('[id$=AmountRem]').val('0.00');
+            return;
+        }
+        $('[id$=AmountRem]').val(amntReUp.toFixed(2));
+    }
+    </script>
+    <apex:form >
+        <apex:pageBlock >
+            <apex:pageMessages id="emsgs"/>
+            <apex:pageBlockButtons ><apex:commandButton value="Save" action="{!save}" /><apex:commandButton value="Save & New" action="{!savenew}" /><apex:commandButton value="Cancel" action="{!cancel}"/></apex:pageBlockButtons>
+            
+            <apex:pageBlockSection columns="2" title="Information">
+                <apex:inputField value="{!revSplit.Charge_Item__c}" />
+                <apex:inputField value="{!revSplit.Financial_Account__c}"/>
+                <apex:inputField value="{!chargeItem.Price__c}" html-disabled="true"/>
+                <apex:inputField id="Amount" value="{!revSplit.Split_Amount__c}" onkeyup="updateAmountRemaining(this);"/>
+            </apex:pageBlockSection>
+            <apex:pageBlockSection title="Additional Information">
+                <apex:inputField id="AmountRem" value="{!revSplit.Amount_Remaining_To_Split__c}" />
+            </apex:pageBlockSection>
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>

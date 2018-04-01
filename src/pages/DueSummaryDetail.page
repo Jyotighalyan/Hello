@@ -1,0 +1,6 @@
+<apex:page showHeader="true" sidebar="true" standardController="Dues_Summary__c">
+	<br/><br/>
+	<apex:pageMessage summary="Sorry! You do not have create/edit/delete permissions." severity="Error" strength="2"/>
+    <apex:pageMessages />
+	<apex:detail relatedList="false"/>
+</apex:page>

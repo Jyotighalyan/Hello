@@ -1,0 +1,157 @@
+<apex:page controller="ManualCreditController">
+    <!-- Scripts -->
+    <apex:includeScript value="{!URLFOR($Resource.jQuery_UI,'/jquery-ui-1.10.3.custom/js/jquery-3.2.1.min.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.jQuery_UI,'/jquery-ui-1.10.3.custom/js/jquery-ui-1.10.3.custom.min.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.jQuery_UI,'/jquery-ui-1.10.3.custom/js/jquery.dataTables.1.10.15.js')}"/>
+    
+    <!--Styles-->
+    <apex:stylesheet value="{!URLFOR($Resource.jQuery_UI, '/jquery-ui-1.10.3.custom/css/ui-lightness/jquery-ui-1.10.3.custom.min.css')}"/>
+    <apex:stylesheet value="{!URLFOR($Resource.jQuery_UI, '/jquery-ui-1.10.3.custom/css/ui-lightness/jquery.dataTables.1.10.15.css')}"/>
+    <script>
+    var debitAmtjs=0.00;
+    var creditAmtjs=0.00;
+    var j$ = jQuery.noConflict();
+    
+    j$('table.PAYTABLE').dataTable({
+        'iDisplayLength':200,
+        'aLengthMenu':[[-1],['All']]
+    });
+    
+    
+    /*function setRequired(dAmount,cAmount,index){
+        
+        var ddamt = Number(document.getElementById(dAmount).value);
+        var ccamt = Number(document.getElementById(cAmount).value);
+        if(ddamt==0 && ccamt==0){
+            document.getElementById(dAmount).value ='';
+            document.getElementById(cAmount).value ='';
+            document.getElementById(dAmount).disabled =false;
+            document.getElementById(cAmount).disabled =false;
+        }else if(ddamt==0){
+            document.getElementById(dAmount).disabled =true;
+            document.getElementById(dAmount).value ='0.00';
+            creditAmtjs = creditAmtjs + ccamt;
+        }else if(ccamt==0){
+            document.getElementById(cAmount).disabled =true;
+            document.getElementById(cAmount).value ='0.00';
+            debitAmtjs = debitAmtjs + ddamt; 
+            j$('#TotalDebits').text(debitAmtjs);
+        }
+    }*/
+    </script>
+    <apex:form id="theForm">
+  
+        <apex:actionStatus id="WORKING">
+            <apex:facet name="start">
+                <div class="waitingSearchDiv" style="background-color: #000;height: 100%;filter: alpha(opacity=50);opacity:0.5;width:100%;"></div>
+                <div class="waitingSearchDiv" style="z-index:999;width:100%"> 
+                    <div class="waitingHolder" style="z-index:999;top: 175px; left: 20px; width: 200px;height: 25px;background-color: #fff;border: 1px solid black;border-radius: 5px;padding-top: 10px;color: #000;">
+                        <span class="waitingDescription" style="color:#000;">Working...</span>
+                        <img class="waitingImage" src="/img/loading.gif" title="Please Wait..." />
+                    </div>
+                </div> 
+            </apex:facet>
+        </apex:actionStatus>
+        <apex:outputPanel id="MESSAGES">
+            <apex:pageMessages ></apex:pageMessages>
+        </apex:outputPanel>
+        <apex:pageBlock id="information">
+            <apex:pageBlockSection title="Credit Information" id="DBIPBS">
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Amount"/>
+                    <apex:inputText value="{!TotalAmount}"/>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Date"/>
+                    <apex:inputField value="{!txnObj.Date__c}"/>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Customer"/>
+                    <apex:inputField value="{!txnObj.Customer__c}"/>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Credit Financial Account"/>
+                    <apex:inputField value="{!txnObj.Credit_Financial_Account__c}"/>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Statement Description"/>
+                    <apex:inputField value="{!txnObj.Statement_Description__c}"/>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Internal Notes"/>
+                    <apex:inputField value="{!txnObj.Internal_Notes__c}"/>
+                </apex:pageBlockSectionItem>
+            </apex:pageBlockSection>
+        </apex:pageBlock>
+        <!--<apex:pageBlock >
+            <apex:pageBlockSection columns="3">
+                <apex:pageBlockSectionItem >
+                    <div align="center" style=" width: 100%;height: 70px ; color:white;background:#1797c0;">
+                        <div align="center" style="width:100%;font-size: 150%;">
+                            &nbsp;
+                        </div>
+                        <div align="center" style="width:100%;font-size: 150%;">
+                            Total Debit    
+                        </div>
+                        <div align="center" style=" width: 100%;">
+                            <span id="TotalDebits">0</span>   
+                        </div>
+                    </div>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <div align="center" style=" width: 100%;height: 70px ; color:white;background:#1797c0;">
+                        <div align="center" style="width:100%;font-size: 150%;">
+                            &nbsp;
+                        </div>
+                        <div align="center" style="width:100%;font-size: 150%;">
+                            Total Credit    
+                        </div>
+                        <div align="center" style=" width: 100%;">
+                            <span id="TotalCredits">0</span>                          
+                        </div>
+                    </div>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <div align="center" style=" width: 100%;height: 70px ; color:white;background:#1797c0;">
+                        <div align="center" style="width:100%;font-size: 150%;">
+                            &nbsp;
+                        </div>
+                        <div align="center" style="width:100%;font-size: 150%;">
+                            Total Amount    
+                        </div>
+                        <div  align="center" style=" width: 100%;">
+                            <span id="TotalsplitAmount">0</span>  
+                        </div>
+                    </div>
+                </apex:pageBlockSectionItem>
+            </apex:pageBlockSection>
+        </apex:pageBlock>-->
+        <apex:pageBlock id="PAYPBTABLE">
+            <apex:pageBlockTable styleClass="PAYTABLE" value="{!CreditListV}" var="p">
+                <apex:column >
+                    <apex:commandLink value="Del" status="WORKING" action="{!delMember}" reRender="PAYPBTABLE">
+                        <apex:param name="p1" value="{!p.index}" assignTo="{!cObjIndex}" />
+                    </apex:commandLink>
+                </apex:column>
+                <apex:column headerValue="Debit financial accounts">
+                    <apex:inputField styleClass="MEM{!p.index}" value="{!p.manCredit.Financial_Account__c }" style="width:200px;">
+                    </apex:inputField> 
+                </apex:column>
+                <apex:column headerValue="Debit amount">
+                    <apex:inputText id="debitAmount" value="{!p.DebitAmt}" style="width:100px;">
+                    </apex:inputText>
+                </apex:column>
+            </apex:pageBlockTable>
+            <apex:commandButton status="WORKING" value="Add more" action="{!addMoreRows}" reRender="PAYPBTABLE"></apex:commandButton>
+        </apex:pageBlock>
+        <apex:pageBlock id="Buttons1" >
+            <apex:pageBlockSection columns="1">
+                <apex:pageBlockSectionItem dataStyle="text-align: center;">
+                    <apex:commandButton status="WORKING" value="Save" action="{!save}" reRender="MESSAGES" style=" width: 203px;height: 30px; color:white;background:#1797c0;"></apex:commandButton>
+                </apex:pageBlockSectionItem>
+                
+            </apex:pageBlockSection>
+            
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>

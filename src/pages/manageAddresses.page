@@ -1,0 +1,935 @@
+<apex:page docType="html-5.0" standardController="Address__c" action="{!checkId}" extensions="ManageAddressesController" standardStylesheets="false">
+    <head>
+        <apex:includescript value="{!URLFOR($Resource.jqueryDatatable_3embed,'/3embed/jquery-1.11.1.min.js')}" />
+        <apex:includescript value="{!URLFOR($Resource.jqueryDatatable_3embed,'/3embed/jquery.dataTables.min.js')}" />
+        <apex:includeScript value="{!URLFOR($Resource.jqueryui_custom,'/js/jquery-ui-1.10.4.custom.min.js')}"/>
+        <apex:includeScript value="{!URLFOR($Resource.qTip2,'/jquery.qtip.min.js')}"/>
+        <apex:includeScript value="https://maps.googleapis.com/maps/api/js?libraries=places&key=AIzaSyDVpMERuV1Zp5YgimN_lCVi6q2L3uFKMEI"/>
+        <apex:stylesheet value="{!URLFOR($Resource.jqueryui_custom, '/css/custom-theme/jquery-ui-1.10.4.custom.min.css')}"/>
+        <apex:stylesheet value="{!URLFOR($Resource.qTip2, '/jquery.qtip.min.css')}"/>
+        <apex:stylesheet value="{!URLFOR($Resource.jqueryDatatable_3embed,'/3embed/jquery.dataTables.min.css')}" />
+        <apex:stylesheet value="{!URLFOR($Resource.foretees, '/main.css')}"/>
+
+        <script>
+            var placeSearch,
+                autocompleteOne,
+                componentForm = {
+                street_number: 'short_name',
+                route: 'long_name',
+                sublocality_level_1: 'long_name',
+                locality: 'long_name',
+                administrative_area_level_1: 'short_name',
+                country: 'long_name',
+                postal_code: 'short_name'
+            };
+
+            $(document).ready(function () {
+                $('#DependentTable').DataTable();
+
+                var ab = "{!forColorChange}",
+                    addressCards,
+                    cardId,
+                    $heading,
+                    headingText,
+                    splittingF;
+
+                // forColorChange is used to determine addresses that are independent
+                if (ab != null && ab != '') {
+                    addressCards = ab.split(', '); // list of shared addresses
+
+                    $('.address-card').addClass('address-dependent'); // default class
+                }
+
+                if (addressCards != null && addressCards != '') {
+                    for (i = 0; i < addressCards.length; i++) {
+                        cardId = '#' + addressCards[i];
+                        $heading = $(cardId).find('.address-card-heading');
+                        headingText = $heading.attr('data-name') + ' (Shared)';
+                        $heading.html(headingText);
+
+                        $(cardId).addClass('address-shared');
+
+                        $(cardId).each(function () {
+                            $(this).find('.js-edit-address-btn').each(function () {
+                                $(this).hide();
+                            });
+                        });
+
+                        splittingF = addressCards[i].split(' ');
+
+                        if (splittingF != '' && splittingF.length != 0) {
+                            cardId = '#' + splittingF[0] + '\\ ' + splittingF[1];
+
+                            $(cardId).addClass('address-shared');
+                            $(cardId).each(function () {
+                                $(this).find('.js-edit-address-btn').each(function () {
+                                    $(this).hide();
+                                });
+                            });
+                        }
+                    }
+                }
+            });
+
+            // to show select address dropdown
+            function initialize() {
+                autoCompleteOne = new google.maps.places.Autocomplete(
+                    (document.getElementById('autocomplete_one')),
+                    { types: ['geocode'] });
+                autoCompleteOne.addListener('place_changed', fillInAddress);
+            }
+
+            //to autofill the address fields
+            function fillInAddress() {
+                var place = autoCompleteOne.getPlace();
+                $('[id$=route]').val('');
+                $('[id$=street_number]').val('');
+                $('[id$=sublocality_level_1]').val('');
+                $('[id$=locality]').val('');
+                $('[id$=administrative_area_level_1]').val('');
+                $('[id$=country]').val('');
+                $('[id$=postal_code]').val('');
+
+                for (var i = 0; i < place.address_components.length; i++) {
+                    var addressType = place.address_components[i].types[0];
+                    if (componentForm[addressType]) {
+                        var val = place.address_components[i][componentForm[addressType]];
+                        $('[id$='+addressType+']').val(val);
+                    }
+                }
+                var stret =  $('[id$=street_number]').val();
+                if (stret!='') {
+                    stret = stret+' '+$('[id$=route]').val();
+                } else {
+                    stret = $('[id$=route]').val();
+                }
+
+                $('[id$=street_number]').val(stret);
+                $('[id$=route]').val($('[id$=sublocality_level_1]').val());
+                $('[id$=sublocality_level_1]').val('');
+            }
+
+            //used to get location to give dropdown to select address
+            function geolocate() {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(function(position) {
+                        var geolocation = {
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude
+                        };
+                        var circle = new google.maps.Circle({
+                            center: geolocation,
+                            radius: position.coords.accuracy
+                        });
+                        autoCompleteOne.setBounds(circle.getBounds());
+                    });
+                }
+            }
+
+            //to prepare the delete popup Data
+            function deleteData(id){
+                DeleteFunction(id);
+            }
+
+            //to prepare edit popup data
+            function editAddressData(id){
+                EditFunction(id);
+            }
+        </script>
+    </head>
+
+    <div class="ft-container">
+        <apex:sectionHeader title="{!memberName}" subtitle="Manage Addresses" />
+
+        <!--Breadcrumbs-->
+        <div class="address-breadcrumbs">
+            <apex:outputText rendered="{!isMember}">
+                <a class="address-breadcrumb" href='/{!memberId}'>{!memberName}</a><span class="address-breadcrumb-separator">&gt;</span><span class="address-breadcrumb-current">{!memberName} Addresses</span>
+            </apex:outputText>
+            <apex:outputText rendered="{!isDependent}">
+                <apex:outputLink value="/apex/manageAddresses?memberId={!primaryMemberId}">{!dependentPrimaryName}</apex:outputLink><apex:outputText rendered="{!IF(dependentPrimaryName == null, false, true)}"><span class="address-breadcrumb-separator">&gt;</span></apex:outputText><a class="address-breadcrumb" href='/{!memberId}'>{!memberName}</a><span class="address-breadcrumb-separator">&gt;</span><span class="address-breadcrumb-current">{!memberName} Addresses</span>
+            </apex:outputText>
+        </div>
+        <!--/end Breadcrumbs-->
+        <apex:form >
+            <apex:actionFunction name="saveNewOnDep" action="{!saveNewDependentAddress}"/>
+            <apex:actionFunction name="saveEditOnDep" action="{!saveDependentAdd}"/>
+            <apex:actionFunction name="deleteCopiedFrom" action="{!makeFalseCopiedToIfNoEditSelected}" />
+
+            <!--Error handling-->
+            <apex:outputPanel rendered="{!IF(accountNameBlankError==true,true,false)}">
+                <apex:pageBlock >
+                    <apex:outputPanel styleClass="red">
+                        <apex:pageBlockSection title="Error:">
+                        <p style="color:black;">
+                            Member is not associated with any account <br />
+                            Press ok to go back</p>
+                            <br/>
+                            <a href="/{!memberId}"><input type="button" id="Cancelbtn" status="loading" value="Ok" style=" width: 100px;height: 30px;color:white;background: #6666FF;"/></a>
+                        </apex:pageBlockSection>
+                    </apex:outputPanel>
+                </apex:pageBlock>
+            </apex:outputPanel>
+            <!--/end Error handling-->
+
+            <apex:pageBlock id="popup" rendered="{!IF(accountNameBlankError==true,false,true)}">
+                <!--Loading-->
+                <apex:actionstatus id="loading" onstop="enablebutton();">
+                    <apex:facet name="stop"></apex:facet>
+                    <apex:facet name="start">
+                        <div class="waitingSearchDiv" id="el_loading" style="z-index:999;width:100%">
+                            <div class="waitingHolder" style="z-index:999; opacity:1.0;position:fixed;top:200px;right:50%;margin-right:-100px; width: 100px;height: 25px;background-color: #fff;border: 1px solid black;border-radius: 5px;padding-top: 0;color: #000;">
+                                <img class="waitingImage" src="/img/loading.gif" title="Please Wait..." />
+                                <span class="waitingDescription" style="color:#000; opacity:1.0;">Working...</span>
+                            </div>
+                        </div>
+                    </apex:facet>
+                </apex:actionstatus>
+                <!--/end Loading-->
+
+                <apex:outputPanel rendered="{!IF(accountNameBlankError==true,false,true)}">
+                    <div class="address-action-container">
+                        <h3 class="address-heading-secondary">{!memberName}&#8217;s Addresses</h3>
+                        <apex:commandButton styleClass="address-action-new" id="AddNewButton" value="Add New Address" status="loading" action="{!addNew}" rerender="addNew" />
+                    </div>
+                    <!--if Dependent-->
+                    <apex:outputPanel styleClass="address-note" layout="block" rendered="{!isDependent}">
+                        <p><em>* Note:</em> Shared addresses may only be edited from the primary member&#8217;s account.</p>
+                    </apex:outputPanel>
+                    <!--/end if Dependent-->
+                </apex:outputPanel>
+
+                <apex:actionFunction name="DeleteFunction" status="loading" action="{!DeleteAddress}" rerender="delete">
+                    <apex:param id="dnode" name="Data" value="" />
+                </apex:actionFunction>
+                <apex:actionFunction name="EditFunction" status="loading" action="{!EditAddress}" rerender="edit">
+                    <apex:param id="dnode1" name="Data" value="" />
+                </apex:actionFunction>
+
+                <!--Address cards-->
+                <apex:repeat id="address" value="{!addressList}" var="addr">
+                    <apex:outputPanel layout="block" rendered="{!IF(accountNameBlankError==true,false,true)}">
+                        <apex:repeat value="{!addr}" var="address">
+                            <div class="address-card" id="{!address.Type__c}">
+                                <div class="address-card-header">
+                                    <h4 class="address-card-heading" data-name="{!address.Name}">{!address.Name}</h4>
+                                    <div class="address-edit-controls">
+                                        <button class="address-card-action address-card-link js-edit-address-btn" type="button"
+                                            onclick="editAddressData('{!address.Id}'); return false;">Edit</button>
+                                        <button class="address-card-action" type="button"
+                                            onclick="deleteData('{!address.Id}'); return false;">
+                                            <span class="address-close">&times;</span>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="address-card-content ft-grid">
+                                    <div class="col">
+                                        <ul class="ft-key-val">
+                                            <li>
+                                                <div class="ft-key">Address Type:</div>
+                                                <div class="ft-val">
+                                                    {!address.Type__c}
+                                                </div>
+                                            </li>
+                                            <li>
+                                                <div class="ft-key">Addressee:</div>
+                                                <div class="ft-val">
+                                                    {!address.Addressee__c}
+                                                </div>
+                                            </li>
+                                            <li>
+                                                <div class="ft-key">Street 1:</div>
+                                                <div class="ft-val">{!address.Street_1__c}</div>
+                                            </li>
+                                            <li>
+                                                <div class="ft-key">Street 2:</div>
+                                                <div class="ft-val">{!address.Street_2__c}</div>
+                                            </li>
+                                            <li>
+                                                <div class="ft-key">Street 3:</div>
+                                                <div class="ft-val">{!address.Street_3__c}</div>
+                                            </li>
+                                            <li>
+                                                <div class="ft-key">City:</div>
+                                                <div class="ft-val">{!address.City__c}</div>
+                                            </li>
+                                            <li>
+                                                <div class="ft-key">State:</div>
+                                                <div class="ft-val">{!address.State_Province__c}</div>
+                                            </li>
+                                            <li>
+                                                <div class="ft-key">ZIP/Postal Code:</div>
+                                                <div class="ft-val">{!address.Zip_Postal_Code__c}</div>
+                                            </li>
+                                            <li>
+                                                <div class="ft-key">Country:</div>
+                                                <div class="ft-val">{!address.Country__c}</div>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    <div class="col">
+                                        <ul class="ft-key-val">
+                                            <li>
+                                                <div class="ft-key">From Date:</div>
+                                                <div class="ft-val">
+                                                    <apex:outputText value="{0, date, MMMM d}">
+                                                        <apex:param value="{!address.From_Date__c}" />
+                                                    </apex:outputText>
+                                                </div>
+                                            </li>
+                                            <li>
+                                                <div class="ft-key">To Date:</div>
+                                                <div class="ft-val">
+                                                    <apex:outputText value="{0, date, MMMM d}">
+                                                        <apex:param value="{!address.To_Date__c}" />
+                                                    </apex:outputText>
+                                                </div>
+                                            </li>
+                                            <li>
+                                                <div class="ft-key">Primary:</div>
+                                                <div class="ft-val"><apex:outputField value="{!address.Primary__c}" /></div>
+                                            </li>
+                                            <li>
+                                                <div class="ft-key">Active:</div>
+                                                <div class="ft-val"><apex:outputField value="{!address.MonthDayActive__c}" /></div>
+                                            </li>
+                                            <li>
+                                                <div class="ft-key">Billing:</div>
+                                                <div class="ft-val"><apex:outputField value="{!address.Billing__c}" /></div>
+                                            </li>
+                                            <li>
+                                                <div class="ft-key">Newsletter:</div>
+                                                <div class="ft-val"><apex:outputField value="{!address.Newsletter__c}" /></div>
+                                            </li>
+                                            <li>
+                                                <div class="ft-key">Roster:</div>
+                                                <div class="ft-val"><apex:outputField value="{!address.Roster__c}" /></div>
+                                            </li>
+                                            <li>
+                                                <div class="ft-key">Description:</div>
+                                                <div class="ft-val">{!address.Description__c}</div>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </apex:repeat>
+                    </apex:outputPanel>
+                </apex:repeat>
+                <!--/end Address cards-->
+
+                <!--Dependent table-->
+                <apex:outputPanel layout="block" rendered="{!isMember}">
+                    <div class="address-card address-dependent">
+                        <div class="address-card-header">
+                            <apex:outputPanel layout="block" id="DependentTableContainer">
+                                <h3 class="address-card-heading">{!memberName}&#8217;s Dependent(s)</h3>
+                            </apex:outputPanel>
+                        </div>
+                        <div class="address-card-content">
+                            <apex:outputPanel layout="block">
+                                <table id="DependentTable" style="width:100%; margin-top: 12px;">
+                                    <thead>
+                                        <tr>
+                                            <th style="width:20%;">Dependent Names</th>
+                                            <th style="width:20%;">Relationship</th>
+                                            <th style="width:35%;">Shared Address Types</th>
+                                            <th style="width:30%;">Independent Address Types</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <apex:repeat value="{!TableData}" var="allD">
+                                            <tr id="{!allD.Id}">
+                                                <td>
+                                                    <apex:outputLink value="/apex/manageAddresses?memberId={!allD.Id}&amp;primaryMemId={!memberId}">
+                                                        {!allD.Name}
+                                                    </apex:outputLink>
+                                                    <span id ="DependentId" style='display:none;'>{!allD.Id}</span>
+                                                </td>
+                                                <td>
+                                                    {!allD.Relationship}
+                                                </td>
+                                                <td>
+                                                    <apex:outputLink value="/apex/manageAddresses?memberId={!allD.Id}&amp;primaryMemId={!memberId}">
+                                                        <apex:repeat value="{!allD.sharedaddressList}" var="saddresses">{!saddresses.addressName}</apex:repeat>
+                                                    </apex:outputLink>
+                                                </td>
+                                                <td>
+                                                    <apex:outputLink value="/apex/manageAddresses?memberId={!allD.Id}&amp;primaryMemId={!memberId}">
+                                                        <apex:repeat value="{!allD.indepAddressList}" var="addresses">{!addresses.addressName}</apex:repeat>
+                                                    </apex:outputLink>
+                                                </td>
+                                            </tr>
+                                        </apex:repeat>
+                                    </tbody>
+                                </table>
+                            </apex:outputPanel>
+                        </div>
+                    </div>
+                </apex:outputPanel>
+                <!--/end Dependent table-->
+            </apex:pageBlock>
+
+            <apex:outputPanel id="addNew">
+                <script>
+                    $(function () {
+                        // sanitize memberId get parameter to prevent xss
+                        var memberId = "{!JSENCODE(memberId)}";
+                        var primaryMemberId = "{!JSENCODE(primaryMemberId)}";
+                        var $saveOnDependent12 = $('#saveOnDependent12');
+
+                        $saveOnDependent12.dialog({
+                            autoOpen: false,
+                            modal: true,
+                            draggable: true,
+                            closeOnEscape: false,
+                            hide: "puff",
+                            show : "slide",
+                            buttons: {
+                                'Yes': function () {
+                                    saveNewOnDep();
+                                },
+                                'No': function () {
+                                    if (primaryMemberId === null || primaryMemberId === '') {
+                                        window.location = '/apex/manageAddresses?memberId=' + memberId;
+                                    } else {
+                                        window.location = '/apex/manageAddresses?memberId=' + memberId + '&primaryMemId=' + primaryMemberId;
+                                    }
+                                }
+                            }
+                        });
+
+                        $saveOnDependent12.removeClass('js-hidden');
+                    });
+
+                    function confimartionOn() {
+                        // sanitize memberId get parameter to prevent xss
+                        var memberId = "{!JSENCODE(memberId)}";
+                        var primaryMemberId = "{!JSENCODE(primaryMemberId)}";
+
+                        if ({!saveOnDependentBoolean} == true) {
+                            $('#popupAddTable').remove();
+                            var tabl = document.createElement('table');
+                            tabl.id = 'popupAddTable';
+                            tabl.style.width='100%';
+                            var tbdy = document.createElement('tbody');
+                            var tr = document.createElement('tr');
+                            var cSA = [];
+                            var idx=0;
+                            <apex:repeat value="{!currentSharedAddressList}" var="ele">
+                                cSA[idx++]="{!ele}";
+                            </apex:repeat>
+
+                            for (var j = 0; j < cSA.length; j++) {
+                                var td = document.createElement('td');
+                                td.appendChild(document.createTextNode(cSA[j]));
+                                tr.appendChild(td);
+                            }
+                            tbdy.appendChild(tr);
+                            tabl.appendChild(tbdy);
+                            document.getElementById('sharedAddressName').appendChild(tabl);
+                            $('#saveOnDependent12').dialog('open');
+                        }
+
+                        if ({!refPage} == true) {
+                            if (primaryMemberId === null || primaryMemberId === '') {
+                                window.location = '/apex/manageAddresses?memberId=' + memberId;
+                            } else {
+                                window.location = '/apex/manageAddresses?memberId=' + memberId + '&primaryMemId=' + primaryMemberId;
+                            }
+                        }
+                    }
+
+                    $('#saveOnDependent12').dialog({
+                        open: function( event, ui ) {
+                            document.getElementById('Save').disabled = true;
+                            document.getElementById('Cancelbtn').disabled = true;
+                        }
+                    });
+
+                    $('#saveOnDependent12').dialog({
+                        close: function( event, ui ) {
+                            document.getElementById('Save').disabled = false;
+                            document.getElementById('Cancelbtn').disabled = false;
+                        }
+                    });
+                </script>
+
+                <apex:outputPanel styleClass="popupBg" layout="block" rendered="{!addNewAddressBoolean}"/>
+
+                <apex:outputPanel styleClass="popup1" layout="block" rendered="{!addNewAddressBoolean}">
+                    <div class="address-close-container">
+                        <a class="cart address-close" href="/apex/manageAddresses?memberId={!memberId}">
+                            &times;
+                        </a>
+                    </div>
+                    <apex:pageBlock id="addingPageBlock">
+                        <apex:outputPanel id="one" styleClass="red" style="width:100%;">
+                            <apex:pageMessages id="msgs"></apex:pageMessages>
+                            <apex:pageBlockSection id="addressFill1" title="Provide Address Information">
+                                <apex:pageBlockSectionItem >
+                                    Address Name: <apex:inputField value="{!newAddress.Name}" required="true"/>
+                                </apex:pageBlockSectionItem>
+                                <apex:pageBlockSectionItem >
+                                    <apex:outputLabel >Type:</apex:outputLabel>
+                                        <apex:outputPanel layout="block">
+                                            <div class="requiredInput">
+                                                <div class="requiredBlock"> </div>
+                                                <apex:inputField label="Type" value="{!newAddress.Type__c}"/>
+                                            </div>
+                                    </apex:outputPanel>
+                                </apex:pageBlockSectionItem>
+                                <apex:pageBlockSectionItem >
+                                    Addressee: <apex:inputField id="street_number" value="{!newAddress.Addressee__c}"/>
+                                </apex:pageBlockSectionItem>
+                                <apex:pageBlockSectionItem >
+                                    Street 1: <apex:inputField id="street_number" value="{!newAddress.Street_1__c}"/>
+                                </apex:pageBlockSectionItem>
+                                <apex:pageBlockSectionItem >
+                                    Street 2: <apex:inputField id="route" value="{!newAddress.Street_2__c}"/>
+                                </apex:pageBlockSectionItem>
+                                <apex:pageBlockSectionItem >
+                                    Street 3: <apex:inputField id="sublocality_level_1" value="{!newAddress.Street_3__c}"/>
+                                </apex:pageBlockSectionItem>
+                                <apex:pageBlockSectionItem >
+                                    City: <apex:inputField id="locality" value="{!newAddress.City__c}"/>
+                                </apex:pageBlockSectionItem>
+                                <apex:pageBlockSectionItem >
+                                    Country: <apex:inputField id="country" value="{!newAddress.Country__c}"/>
+                                </apex:pageBlockSectionItem>
+                                <apex:pageBlockSectionItem >
+                                    State: <apex:inputField id="administrative_area_level_1" value="{!newAddress.State_Province__c}"/>
+                                </apex:pageBlockSectionItem>
+                                <apex:pageBlockSectionItem >
+                                    Zip/Postal Code: <apex:inputField id="postal_code" value="{!newAddress.Zip_Postal_Code__c}"/>
+                                </apex:pageBlockSectionItem>
+                                <apex:pageBlockSectionItem >
+                                    <apex:outputLabel value="From date:"/>
+                                    <apex:outputPanel layout="block">
+                                        <apex:selectList size="1" value="{!selectedFromMonth}">
+                                            <apex:selectOptions value="{!months}" />
+                                        </apex:selectList>
+                                        <apex:selectList size="1" style="margin-left:5px;" value="{!selectedFromDay}">
+                                            <apex:selectOptions value="{!days}" />
+                                        </apex:selectList>
+                                    </apex:outputPanel>
+                                </apex:pageBlockSectionItem>
+                                <apex:pageBlockSectionItem >
+                                    <apex:outputLabel value="To date:"/>
+                                    <apex:outputPanel layout="block">
+                                        <apex:selectList size="1" value="{!selectedToMonth}">
+                                            <apex:selectOptions value="{!months}" />
+                                        </apex:selectList>
+                                        <apex:selectList size="1" style="margin-left:5px;" value="{!selectedToDay}">
+                                            <apex:selectOptions value="{!days}" />
+                                        </apex:selectList>
+                                    </apex:outputPanel>
+                                </apex:pageBlockSectionItem>
+                                <apex:pageBlockSectionItem >
+                                    Primary: <apex:inputField value="{!newAddress.Primary__c}"/>
+                                </apex:pageBlockSectionItem>
+                                <apex:pageBlockSectionItem >
+                                    Billing: <apex:inputField value="{!newAddress.Billing__c}"/>
+                                </apex:pageBlockSectionItem>
+                                <apex:pageBlockSectionItem >
+                                    Newsletter: <apex:inputField value="{!newAddress.Newsletter__c}"/>
+                                </apex:pageBlockSectionItem>
+                                <apex:pageBlockSectionItem >
+                                    Roster: <apex:inputField value="{!newAddress.Roster__c}"/>
+                                </apex:pageBlockSectionItem>
+                                <apex:pageBlockSectionItem >
+                                    Description: <apex:inputField value="{!newAddress.Description__c}"/>
+                                </apex:pageBlockSectionItem>
+                                <apex:pageBlockSectionItem ></apex:pageBlockSectionItem>
+                            </apex:pageBlockSection>
+                        </apex:outputPanel>
+
+                        <apex:outputPanel styleclass="red" id="AddNewDependentList">
+                            <apex:pageBlockSection title="Select Dependents" rendered="{!isMember}">
+                                <apex:outputPanel id="DeleteAddressTableContainer" rendered="{!isMember}">
+                                    <table id="AddNewDependentTable" style="width:260%; padding-top:20px;">
+                                        <thead>
+                                            <tr>
+                                                <th style="width:25%;">Dependent Names</th>
+                                                <th style="width:25%;">Relationship</th>
+                                                <th style="width:25%;">Add Address</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <apex:repeat value="{!testingAddNew}" var="DD1">
+                                                <tr id="{!DD1.id}">
+                                                    <td><apex:outputLink value="/{!DD1.Id}">{!DD1.Name}</apex:outputLink><span id ="DependentId" style='display:none;'>{!DD1.Id}</span></td>
+                                                    <td>{!DD1.Relationship}</td>
+                                                    <td><apex:inputCheckbox value="{!DD1.chechIfDependSel}"/></td>
+                                                </tr>
+                                            </apex:repeat>
+                                        </tbody>
+                                    </table>
+                                </apex:outputPanel>
+                            </apex:pageBlockSection>
+                        </apex:outputPanel>
+
+                        <div align="right">
+                            <apex:commandButton id="Save" value="Save" status="loading" action="{!AddingNew}" rerender="msgs, addNew" oncomplete="confimartionOn(); return false;"/>
+
+                            <apex:outputText rendered="{!primaryMemberId != null}">
+                                <a class="btn-link" href="/apex/manageAddresses?memberId={!memberId}&primaryMemId={!primaryMemberId}">
+                                    <input class="btn" type="button" id="Cancelbtn" status="loading" value="Cancel"/>
+                                </a>
+                            </apex:outputText>
+
+                            <apex:outputText rendered="{!primaryMemberId == null}">
+                                <a class="btn-link" href="/apex/manageAddresses?memberId={!memberId}">
+                                    <input class="btn" type="button" id="Cancelbtn" status="loading" value="Cancel"/>
+                                </a>
+                            </apex:outputText>
+                        </div>
+                    </apex:pageBlock>
+                </apex:outputPanel>
+            </apex:outputPanel>
+
+            <div class="js-hidden" id="saveOnDependent12" title="Confirmation">
+                <p>This Address Type already exist on these <strong>dependent(s)</strong>.</p>
+                <p id="sharedAddressName"></p>
+                <p>Do You want to override it?</p>
+            </div>
+
+            <apex:outputPanel id="delete">
+                <apex:outputPanel styleClass="popupBg" layout="block" rendered="{!deletePopupBoolean}"/>
+                <apex:outputPanel styleClass="popup1" layout="block" rendered="{!deletePopupBoolean}">
+                    <div class="address-close-container">
+                        <apex:outputText rendered="{!primaryMemberId != null}">
+                            <a class="address-close" href="/apex/manageAddresses?memberId={!memberId}&primaryMemId={!primaryMemberId}">
+                                &times;
+                            </a>
+                        </apex:outputText>
+                        <apex:outputText rendered="{!primaryMemberId == null}">
+                            <a class="address-close" href="/apex/manageAddresses?memberId={!memberId}">
+                                &times;
+                            </a>
+                        </apex:outputText>
+                    </div>
+                    <apex:pageblock >
+                        <apex:outputPanel rendered="{!isDependent}">
+                            <p>Are you sure you want to delete this address?</p>
+                        </apex:outputPanel>
+                        <apex:outputPanel styleclass="red" id="DeleteAddressTableContainer1" rendered="{!IF(testingAddNewSize!=0, true, false)}">
+                            <apex:pageBlockSection title="Choose Dependents to delete same address" rendered="{!isMember}">
+                                <apex:outputPanel >
+                                    <table id="DependentTableDelete" style="width:173%; padding-top:20px;">
+                                        <thead>
+                                            <tr>
+                                                <th>Dependent Names</th>
+                                                <th>Relationship</th>
+                                                <th>Copied to</th>
+                                                <th>Delete</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <apex:repeat value="{!testingAddNew}" var="DD">
+                                                <tr>
+                                                    <td><apex:outputLink value="/{!DD.Id}">{!DD.Name}</apex:outputLink><span id ="DependentId" style='display:none;'>{!DD.Id}</span></td>
+                                                    <td>{!DD.Relationship}</td>
+                                                    <td><apex:inputCheckbox value="{!DD.statusBool}" disabled="true" selected="true"></apex:inputCheckbox><span id="DependentStatus" style="display:none">{!DD.statusBool}</span></td>
+                                                    <td><apex:inputCheckbox value="{!DD.chechIfDependSel}" id="dependentDeleteCheckBox" disabled="{!!DD.statusBool}"></apex:inputCheckbox></td>
+                                                </tr>
+                                            </apex:repeat>
+                                        </tbody>
+                                    </table>
+                                </apex:outputPanel>
+                            </apex:pageBlockSection>
+                            <apex:pageBlockSection title="Address Detail" rendered="{!IF(dependentSelectedTypeAddressSize1!=0,true,false)}">
+                                <apex:outputPanel >
+                                    <table width="{!dependentSelectedTypeAddressSize}%">
+                                        <thead>
+                                            <apex:repeat value="{!dependentSelectedTypeAddress}" var="dsa">
+                                                <th style="color:darkgreen;">{!dsa.Name}</th>
+                                            </apex:repeat>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <apex:repeat value="{!dependentSelectedTypeAddress}" var="ds">
+                                                    <td>{!ds.selectedAddressDetail.Street_1__c}, <br/>{!ds.selectedAddressDetail.Street_2__c}<br/>{!ds.selectedAddressDetail.Street_3__c} {!ds.selectedAddressDetail.City__c} {!ds.selectedAddressDetail.State_Province__c}</td>
+                                                </apex:repeat>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </apex:outputPanel>
+                            </apex:pageBlockSection>
+                        </apex:outputPanel>
+                        <div align="right">
+                            <apex:commandButton value="Delete Address" status="loading" action="{!DeletingAddresses}" rerender="msgs" />
+
+                            <apex:outputText rendered="{!primaryMemberId != null}">
+                                <a class="btn-link" href="/apex/manageAddresses?memberId={!memberId}&primaryMemId={!primaryMemberId}">
+                                    <input class="btn" type="button" id="Cancelbtn1" status="loading" value="Cancel" />
+                                </a>
+                            </apex:outputText>
+
+                            <apex:outputText rendered="{!primaryMemberId == null}">
+                                <a class="btn-link" href="/apex/manageAddresses?memberId={!memberId}">
+                                    <input class="btn" type="button" id="Cancelbtn1" status="loading" value="Cancel" />
+                                </a>
+                            </apex:outputText>
+                        </div>
+                    </apex:pageblock>
+                </apex:outputPanel>
+            </apex:outputPanel>
+
+            <apex:outputPanel id="edit">
+                <script>
+                    $(function () {
+                        // sanitize memberId get parameter to prevent xss
+                        var memberId = "{!JSENCODE(memberId)}";
+                        var $saveOnDependent123 = $('#saveOnDependent123');
+
+                        $saveOnDependent123.dialog({
+                            autoOpen: false,
+                            modal: true,
+                            draggable: true,
+                            closeOnEscape: false,
+                            hide: "puff",
+                            show : "slide",
+                            buttons: {
+                                'Yes': function () {
+                                    saveEditOnDep();
+                                },
+                                'No': function () {
+                                    deleteCopiedFrom();
+                                }
+                            }
+                        });
+
+                        $saveOnDependent123.removeClass('js-hidden');
+                    });
+
+                    function confimartionOn1() {
+                        // sanitize memberId get parameter to prevent xss
+                        var memberId = "{!JSENCODE(memberId)}";
+                        var primaryMemberId = "{!JSENCODE(primaryMemberId)}";
+
+                        if ({!saveOnDependentBoolean} == true) {
+                            $('#popupTable').remove();
+                            var tabl = document.createElement('table');
+                            tabl.id = 'popupTable';
+                            tabl.style.width='100%';
+                            var tbdy = document.createElement('tbody');
+                            var tr = document.createElement('tr');
+                            var cSA = [];
+                            var idx = 0;
+
+                            <apex:repeat value="{!currentSharedAddressList}" var="ele">
+                                cSA[idx++] = "{!ele}";
+                            </apex:repeat>
+
+                            for (var j = 0; j<cSA.length; j++) {
+                                var td = document.createElement('td');
+                                td.appendChild(document.createTextNode(cSA[j]));
+                                tr.appendChild(td);
+                            }
+
+                            tbdy.appendChild(tr);
+                            tabl.appendChild(tbdy);
+                            document.getElementById('sharedAddressName1').appendChild(tabl);
+                            $('#saveOnDependent123').dialog('open');
+                        }
+
+                        if ({!refPage} == true) {
+                            if (primaryMemberId === null || primaryMemberId === '') {
+                                window.location = '/apex/manageAddresses?memberId=' + memberId;
+                            } else {
+                                window.location = '/apex/manageAddresses?memberId=' + memberId + '&primaryMemId=' + primaryMemberId;
+                            }
+                        }
+                    }
+
+                    $('#saveOnDependent123').dialog({
+                        open: function( event, ui ) {
+                            document.getElementById('EditButton1').disabled = true;
+                            document.getElementById('Cancelbtn2').disabled = true;
+                        }
+                    });
+
+                    $('#saveOnDependent123').dialog({
+                        close: function( event, ui ) {
+                            document.getElementById('EditButton1').disabled = false;
+                            document.getElementById('Cancelbtn2').disabled = false;
+                        }
+                    });
+                </script>
+
+                <apex:outputPanel styleClass="popupBg" layout="block" rendered="{!editPopupBoolean}"/>
+                <apex:outputPanel styleClass="popup1" layout="block" rendered="{!editPopupBoolean}">
+                    <div class="address-close-container">
+                        <a class="address-close" href="/apex/manageAddresses?memberId={!memberId}">
+                            &times;
+                        </a>
+                    </div>
+                    <apex:pageBlock id="some">
+                        <apex:outputPanel id="one1" styleClass="red" style="width:100%;">
+                            <apex:outputPanel id="disclaimerBlock">
+                                <apex:pageMessages id="msgs1"></apex:pageMessages>
+                            </apex:outputPanel>
+                            <apex:pageBlockSection id="some2" title="Edit Address">
+                                <apex:pageBlockSectionItem >
+                                    Address Name: <apex:inputField value="{!selectedAddressDetail.Name}" required="true"/>
+                                </apex:pageBlockSectionItem>
+                                <apex:pageBlockSectionItem >
+                                    <apex:outputLabel >Type:</apex:outputLabel>
+                                    <apex:outputPanel layout="block">
+                                        <div class="requiredInput">
+                                            <div class="requiredBlock"> </div>
+                                            <apex:inputField value="{!selectedAddressDetail.Type__c}"/>
+                                        </div>
+                                    </apex:outputPanel>
+                                </apex:pageBlockSectionItem>
+                                <apex:pageBlockSectionItem >
+                                    Addressee: <apex:inputField id="street_number" value="{!selectedAddressDetail.Addressee__c}"/>
+                                </apex:pageBlockSectionItem>
+                                <apex:pageBlockSectionItem >
+                                    Street 1: <apex:inputField value="{!selectedAddressDetail.Street_1__c}"/>
+                                </apex:pageBlockSectionItem>
+                                <apex:pageBlockSectionItem >
+                                    Street 2: <apex:inputField value="{!selectedAddressDetail.Street_2__c}"/>
+                                </apex:pageBlockSectionItem>
+                                <apex:pageBlockSectionItem >
+                                    Street 3: <apex:inputField value="{!selectedAddressDetail.Street_3__c}"/>
+                                </apex:pageBlockSectionItem>
+                                <apex:pageBlockSectionItem >
+                                    City: <apex:inputField value="{!selectedAddressDetail.City__c}"/>
+                                </apex:pageBlockSectionItem>
+                                <apex:pageBlockSectionItem >
+                                    Country: <apex:inputField value="{!selectedAddressDetail.Country__c}"/>
+                                </apex:pageBlockSectionItem>
+                                <apex:pageBlockSectionItem >
+                                    State: <apex:inputField value="{!selectedAddressDetail.State_Province__c}"/>
+                                </apex:pageBlockSectionItem>
+                                <apex:pageBlockSectionItem >
+                                    Zip/Postal Code: <apex:inputField value="{!selectedAddressDetail.Zip_Postal_Code__c}"/>
+                                </apex:pageBlockSectionItem>
+                                <apex:pageBlockSectionItem >
+                                    <apex:outputLabel value="From date:"/>
+                                        <apex:outputPanel layout="block">
+                                            <apex:selectList size="1" value="{!selectedFromMonth}">
+                                                <apex:selectOptions value="{!months}" />
+                                            </apex:selectList>
+                                            <apex:selectList size="1" style="margin-left:5px;" value="{!selectedFromDay}">
+                                                <apex:selectOptions value="{!days}" />
+                                            </apex:selectList>
+                                        </apex:outputPanel>
+                                </apex:pageBlockSectionItem>
+                                <apex:pageBlockSectionItem >
+                                    <apex:outputLabel value="To date:"/>
+                                    <apex:outputPanel layout="block">
+                                        <apex:selectList size="1" value="{!selectedToMonth}">
+                                            <apex:selectOptions value="{!months}" />
+                                        </apex:selectList>
+                                        <apex:selectList size="1" style="margin-left:5px;" value="{!selectedToDay}">
+                                            <apex:selectOptions value="{!days}" />
+                                        </apex:selectList>
+                                    </apex:outputPanel>
+                                </apex:pageBlockSectionItem>
+                                <apex:pageBlockSectionItem >
+                                    Primary: <apex:inputField value="{!selectedAddressDetail.Primary__c}"/>
+                                </apex:pageBlockSectionItem>
+                                <apex:pageBlockSectionItem >
+                                    Billing: <apex:inputField value="{!selectedAddressDetail.Billing__c}"/>
+                                </apex:pageBlockSectionItem>
+                                <apex:pageBlockSectionItem >
+                                    Newsletter: <apex:inputField value="{!selectedAddressDetail.Newsletter__c}"/>
+                                </apex:pageBlockSectionItem>
+                                <apex:pageBlockSectionItem >
+                                    Roster: <apex:inputField value="{!selectedAddressDetail.Roster__c}"/>
+                                </apex:pageBlockSectionItem>
+                                <apex:pageBlockSectionItem >
+                                    Description: <apex:inputField value="{!selectedAddressDetail.Description__c}"/>
+                                </apex:pageBlockSectionItem>
+                            </apex:pageBlockSection>
+                        </apex:outputPanel>
+
+                        <apex:outputPanel styleclass="red" rendered="{!isMember}">
+                            <apex:outputPanel rendered="{!IF(dependentSelectedTypeAddressSize1!=0,true,false)}">
+                                <apex:pageBlockSection title="Address Detail">
+                                    <apex:outputPanel >
+                                        <table width="{!dependentSelectedTypeAddressSize}%;">
+                                            <thead>
+                                                <apex:repeat value="{!dependentSelectedTypeAddress}" var="EAT">
+                                                    <th style="color:darkgreen;">{!EAT.Name}</th>
+                                                </apex:repeat>
+                                            </thead>
+                                            <tbody>
+                                                <apex:repeat value="{!dependentSelectedTypeAddress}" var="EA">
+                                                    <td>{!EA.selectedAddressDetail.Street_1__c}, {!EA.selectedAddressDetail.Street_2__c}<br/>{!EA.selectedAddressDetail.Street_3__c} {!EA.selectedAddressDetail.City__c} {!EA.selectedAddressDetail.State_Province__c}</td>
+                                                </apex:repeat>
+                                            </tbody>
+                                        </table>
+                                    </apex:outputPanel>
+                                </apex:pageBlockSection>
+                            </apex:outputPanel>
+
+                            <apex:outputPanel rendered="{!IF(testingAddNewSize!=0,true,false)}">
+                                <apex:pageBlockSection title="Choose Dependents to edit or save this address">
+                                    <apex:outputPanel id="DeleteAddressTableContainer2">
+                                        <table id="DependentTableEdit" style="width:191%; padding-top:20px;">
+                                            <thead>
+                                                <tr>
+                                                    <th>Dependent Names</th>
+                                                    <th>Relationship</th>
+                                                    <th>Copied to</th>
+                                                    <th>Add/Update</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <apex:repeat value="{!testingAddNew}" var="EA">
+                                                    <tr>
+                                                        <td>
+                                                            <apex:outputLink value="/{!EA.Id}">{!EA.Name}</apex:outputLink>
+                                                            <span id ="DependentId" style='display:none;'>{!EA.Id}</span>
+                                                        </td>
+                                                        <td>
+                                                            {!EA.Relationship}
+                                                        </td>
+                                                        <td>
+                                                            <apex:inputCheckbox value="{!EA.statusBool}" disabled="true" selected="true"></apex:inputCheckbox>
+                                                            <span id="DependentStatus" style='display:none;'>{!EA.statusBool}</span>
+                                                        </td>
+                                                        <td>
+                                                            <apex:inputCheckbox value="{!EA.chechIfDependSel}" id="dependentDeleteCheckBox1"></apex:inputCheckbox>
+                                                        </td>
+                                                    </tr>
+                                                </apex:repeat>
+                                            </tbody>
+                                        </table>
+                                    </apex:outputPanel>
+                                </apex:pageBlockSection>
+                            </apex:outputPanel>
+                        </apex:outputPanel>
+
+                        <div align="right">
+                            <apex:commandButton styleClass="btn" id="EditButton1" value="Save Edited Address" status="loading" action="{!EditingAddress}" reRender="msgs1, edit" oncomplete="confimartionOn1(); return false;"/>
+
+                            <apex:outputText rendered="{!primaryMemberId != null}">
+                                <a class="btn-link" href="/apex/manageAddresses?memberId={!memberId}&primaryMemId={!primaryMemberId}">
+                                    <input class="btn" type="button" id="Cancelbtn2" value="Cancel"/>
+                                </a>
+                            </apex:outputText>
+
+                            <apex:outputText rendered="{!primaryMemberId == null}">
+                                <a class="btn-link" href="/apex/manageAddresses?memberId={!memberId}">
+                                    <input class="btn" type="button" id="Cancelbtn2" value="Cancel"/>
+                                </a>
+                            </apex:outputText>
+                        </div>
+                    </apex:pageBlock>
+                </apex:outputPanel>
+            </apex:outputPanel>
+
+            <div class="js-hidden" id="saveOnDependent123" title="Confirmation">
+                <p>This Address Type already exists on some <strong>dependent(s)</strong>.</p>
+                <p id="sharedAddressName1"></p>
+                <p>Are you sure You want to Add/Update it?</p>
+            </div>
+
+        </apex:form>
+    </div>
+</apex:page>

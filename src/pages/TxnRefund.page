@@ -1,0 +1,273 @@
+<apex:page docType="html-5.0" controller="TxnRefundController" standardStylesheets="false">
+     <head>
+        <!-- <apex:includescript value="{!URLFOR($Resource.jqueryDatatable_3embed,'/3embed/jquery-1.11.1.min.js')}" />
+        <apex:includescript value="{!URLFOR($Resource.jqueryDatatable_3embed,'/3embed/jquery.dataTables.min.js')}" />
+        <apex:stylesheet value="{!URLFOR($Resource.jqueryDatatable_3embed,'/3embed/jquery.dataTables.min.css')}" /> 
+        <apex:stylesheet value="{!URLFOR($Resource.EmbedDesignStylesheet,'/ThreeEmbedCustomStyle.css')}" /> -->
+        <apex:includeScript value="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"/>
+    </head>
+    
+     <style>
+        body .bPageBlock .pbBody .red .pbSubheader
+        {
+        background-color:#6666FF;
+        }
+    </style>
+    <style>
+        body .bPageBlock .pbBody .red .pbSubheader{
+        background-color:#6666FF;
+        } 
+        .panelWrapper .mainTitle 
+        {
+        background-color: #6666FF !important;
+        color:white !important;
+        
+        }
+        
+         .popup
+        {
+        background-color: white;
+        border-width: 2px;
+        border-style: solid;
+        z-index: 9999;
+        left: 50%;
+        padding:10px;
+        position: absolute;
+        width: 500px;
+        margin-left: -250px;
+        top:80px;
+        }
+        
+        .popupBg
+        {
+        background-color:black;
+        opacity: 0.20;
+        filter: alpha(opacity = 70);
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+        z-index: 9998;
+        }
+        
+        .vfHelpText a            {position:relative;}
+        .vfHelpText a span       {display: none;}
+        .vfHelpText a:hover span {display: block;
+                                  position:absolute;
+                                  top:1.25em;
+                                  padding:2px 5px;
+                                  left:-15em; width:15em;
+                                  z-index:100;
+                                  border:1px solid orange;
+                                  background-color:#FEFDB9;
+                                  color:black;
+                                 }
+       
+     body .bPageBlock .pbBody .red .pbSubheader{
+        background-color:#1797c0;
+    	}
+    
+        
+        
+    </style> 
+    <script>
+     //$('.Payment_method').hide();
+     $( document ).ready(function() {
+        $('.RefundAmount_box_hidden').show();
+        $('.RefundAmount_box').hide();
+    });
+     function doSave1(node) {
+         console.log(node);
+     	var paymentAmount = parseFloat('{!JSENCODE(HTMLENCODE(paymentAmount))}');
+         var tobeRefunded = parseFloat($("[id$=Refund_amount]").val());
+         
+         if(paymentAmount<tobeRefunded){
+         	alert('Oops! Sorry you can not refund the amount more than payment amount.');    
+            return false;
+         }
+     paraFunction();
+ }
+    function doCancel(node) {
+     	
+     paraFunctionCancel();
+ }
+    
+   
+    function show_payment_method(Type){
+        var type=$(Type).find("option:selected").text();                
+        if(type=='ACH'){
+            $('.RefundAmount_box').show();
+        }else if(type=='Credit Card'){
+            $('.RefundAmount_box').show();
+        }else{
+            $('.RefundAmount_box').hide();
+            $('.RefundAmount_box_hidden').show();
+        }
+    }
+
+
+    
+    </script>
+    <apex:pageBlock > 
+        <apex:outputPanel styleClass="red" >
+            <apex:pageBlockSection title="{!memName}">
+                <apex:pageBlockSectionItem >
+                	<a href='{!FromLink}'><b>{!breadCrump}</b></a> > <b>{!currentPage}</b>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                	<a href='{!allPaymentPage}'><b>{!membName}</b></a> > <b>{!currentPage}</b>
+                </apex:pageBlockSectionItem>    
+            </apex:pageBlockSection>
+        </apex:outputPanel>
+        <apex:pageBlockSection id="errmsgs" >
+         <apex:pageMessages id="msgs" escape="false"></apex:pageMessages>
+        <style>
+        	#finlink{
+              color: green;
+            }
+            #finlink:hover {
+             color: red;
+            }    
+        	</style> 
+        </apex:pageBlockSection>         
+    </apex:pageBlock>
+    <apex:pageBlock id="PAYMENTBLOCK"> 
+        <apex:form id="paymentForm">
+             <apex:actionstatus id="loading" onstop="enablebutton();">
+                <apex:facet name="stop">
+                </apex:facet>
+                <apex:facet name="start" >
+                    <div class="waitingSearchDiv" id="el_loading" style="z-index:999;width:100%">
+                        <div class="waitingHolder" style="z-index:999; opacity:1.0;position:fixed;top:200px;right:50%;margin-right:-100px; width: 100px;height: 25px;background-color: #fff;border: 1px solid black;border-radius: 5px;padding-top: 10px;color: #000;">
+                            <img class="waitingImage" src="/img/loading.gif" title="Please Wait..." />
+                            <span class="waitingDescription" style="color:#000; opacity:1.0;">Working...</span>
+                        </div>
+                    </div>
+                </apex:facet>
+            </apex:actionstatus>
+        	<apex:outputPanel styleClass="red" >
+                <apex:pageBlockSection title="Refund Block" collapsible="false" columns="1">
+                    <apex:pageBlockSection columns="2">
+                        <apex:pageBlockSectionItem >
+                            <apex:outputLabel value="Payment :"  />
+                            <apex:outputPanel layout="block">
+                                <a href='/{!PaymentId}' target='_new'><b>{!PaymentName}</b></a>
+                                                            
+                            </apex:outputPanel>
+                        </apex:pageBlockSectionItem>
+                        <!-- <apex:pageBlockSection columns="1"> -->
+                            <apex:pageBlockSectionItem dataStyleClass="RefundAmount_box">
+                                <apex:outputLabel value="Authorization Code :"  StyleClass="RefundAmount_box"/>
+                                <apex:outputPanel layout="block">
+                                    <apex:inputField value="{!othCharge.External_Payment_Authorization_Code__c}" type="text" id="Auth_code" style="width: 20%;" />                               
+                                </apex:outputPanel>
+                            
+                            </apex:pageBlockSectionItem>
+                        
+                       		 <apex:pageBlockSectionitem dataStyleClass="RefundAmount_box_hidden">
+                        
+                        	</apex:pageBlockSectionitem>
+                            
+                            <apex:pageBlockSectionItem dataStyleClass="RefundAmount_box">
+                                <apex:outputLabel value="Transaction Code :"  StyleClass="RefundAmount_box"/>
+                                <apex:outputPanel layout="block">
+                                    <apex:inputField value="{!othCharge.External_Payment_Transaction_Code__c }" type="text" id="tran_code" style="width: 20%;" />                               
+                                </apex:outputPanel>
+                            
+                            </apex:pageBlockSectionItem>
+                        
+                        	<apex:pageBlockSectionitem dataStyleClass="RefundAmount_box_hidden">
+                        
+                        	</apex:pageBlockSectionitem>
+                                
+                            
+                            
+                        <!-- </apex:pageBlockSection> -->
+                   </apex:pageBlockSection>
+                
+                    
+                    <apex:pageBlockSection columns="2">
+                        
+                     <apex:pageBlockSectionItem >
+                        <apex:outputLabel id="RefundMethod" value="Refund Method :"  />
+                        <apex:outputPanel layout="block">
+                            <div class="requiredInput">
+                                <div class="requiredBlock"></div>
+                            	<apex:inputField value="{!othCharge.Payment_Type__c}" onchange="show_payment_method(this)"/>  
+                            </div>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem >
+                        <apex:outputLabel value="Refund Amount :" />
+                        <apex:outputPanel layout="block">
+                            <apex:inputField value="{!othCharge.Amount__c}" type="text" id="Refund_amount" style="width: 15%;" />                               
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>    
+                    </apex:pageBlockSection>
+                    
+               <apex:pageBlockSection columns="2">
+                   <apex:pageBlockSectionItem >
+                        <apex:outputLabel value="Date :"  />
+                        <apex:outputPanel layout="block">
+                        	<apex:inputField value="{!othCharge.Date__c}" type="date" showDatePicker="false" id="PaymentDate" style="width: 50%;"/>                               
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                   <apex:pageBlockSectionItem >
+                            <apex:outputLabel value="Payment Refunded To:" />
+                        		<apex:outputPanel layout="block">
+                                    <apex:outputField value="{!othCharge.Bill_To_Member__c}" style="width: 30%;"/> 
+                        		</apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    
+                    </apex:pageBlockSection>
+                    <apex:pageBlockSection columns="2">
+                     <apex:pageBlockSectionItem >
+                        <apex:outputLabel value="Refund Reason :"  />
+                        <apex:outputPanel layout="block">
+                        	<apex:inputField value="{!othCharge.Refund_Reason__c}" type="text" id="PaymentDate" style="width: 15%;"/>                               
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                        
+                    </apex:pageBlockSection>
+                     <apex:pageBlockSectionItem >
+                        <apex:outputLabel value="Statement Description :"  />
+                        <apex:outputPanel layout="block">
+                        	<apex:inputField value="{!othCharge.Statement_Description__c }" type="text" id="PaymentDate" style="width: 15%;"/>                               
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                     <apex:pageBlockSectionItem >
+                        <apex:outputLabel value="Amount Left To Refund :"  />
+                        <apex:outputPanel layout="block">
+                           {!Round(amount_left_to_refund,2)}            
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                </apex:pageBlockSection>
+            </apex:outputPanel>
+            	<div align="center">
+                    <apex:commandButton value="Save" onclick="doSave1();return false;"  status="loading"  style=" width: 203px;height: 30px; color:white;background:#1797c0;"/>
+                    <apex:commandButton value="Cancel" action="{!Cancel}" html-formnovalidate="formnovalidate" immediate="true" status="loading"  style=" width: 203px;height: 30px; color:white;background:#1797c0;"/>
+                </div>
+             <apex:actionFunction name="paraFunction"  status="loading" action="{!save}" rerender="ChargeForm,msgs1,errmsgs">   </apex:actionFunction>  
+                 <apex:actionFunction name="paraFunctionCancel"  status="loading" action="{!Cancel}" rerender="ChargeForm,msgs1,errmsgs">   
+               
+            </apex:actionFunction> 
+        </apex:form>
+    </apex:pageBlock>
+     <style>
+    
+    .createVendorPopup{
+            background-color: white;
+            border-width: 2px;
+            border-style: solid;
+            z-index: 275;
+            position: absolute;
+            top:10%;
+            left:20%;
+            width:70%;
+        }
+    
+    </style>
+    
+</apex:page>

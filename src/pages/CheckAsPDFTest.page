@@ -1,0 +1,325 @@
+<apex:page standardStyleSheets="false" showHeader="false" sidebar="false"    standardController="Vendor_Invoice_Check_Batch__c"    extensions="VendorCheckRunController"  applyBodyTag="false">
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Check PDF</title>
+    <apex:includeScript value="{!URLFOR($Resource.jQuery_UI,'/jquery-ui-1.10.3.custom/js/jquery-3.2.1.min.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.jQuery_UI,'/jquery-ui-1.10.3.custom/js/jquery-ui-1.10.3.custom.min.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.jQuery_UI,'jquery-ui-1.10.3.custom/js/jquery-ui.1.12.1.js')}"/>
+    <apex:stylesheet value="{!URLFOR($Resource.jQuery_UI,'jquery-ui-1.10.3.custom/css/ui-lightness/jquery-ui-1.12.1.css')}"/>
+    
+    <script>
+    $( function() {
+        $("#CheckNumberDrag").draggable({
+            stop: function (event, ui) {
+                var check = JSON.parse(JSON.stringify(ui.position));
+                console.log(check.top);
+                console.log(check.left);
+                VendorCheckRunController.SpacingSetting('CheckNumberDrag',check.top,check.left,function(e){
+                    //alert('saved')
+                });
+            }});
+        $("#CheckDateDrag").draggable({
+            stop: function (event, ui) {
+                var check = JSON.parse(JSON.stringify(ui.position));
+                console.log(check.top);
+                console.log(check.left);
+                VendorCheckRunController.SpacingSetting('CheckDateDrag',check.top,check.left,function(e){
+                    //alert('saved')
+                });
+            }});
+        $("#VendorNameDrag").draggable({
+            stop: function (event, ui) {
+                var check = JSON.parse(JSON.stringify(ui.position));
+                console.log(check.top);
+                console.log(check.left);
+                VendorCheckRunController.SpacingSetting('VendorNameDrag',check.top,check.left,function(e){
+                    //alert('saved')
+                });
+            }});
+        $("#AmountInWordDrag").draggable({
+            stop: function (event, ui) {
+                var check = JSON.parse(JSON.stringify(ui.position));
+                console.log(check.top);
+                console.log(check.left);
+                VendorCheckRunController.SpacingSetting('AmountInWordDrag',check.top,check.left,function(e){
+                    //alert('saved')
+                });
+            }});
+        $("#AmountDrag").draggable({
+            stop: function (event, ui) {
+                var check = JSON.parse(JSON.stringify(ui.position));
+                console.log(check.top);
+                console.log(check.left);
+                VendorCheckRunController.SpacingSetting('AmountDrag',check.top,check.left,function(e){
+                    //alert('saved')
+                });
+            }});
+        $("#Sec2VendorNameDrag").draggable({
+            stop: function (event, ui) {
+                var check = JSON.parse(JSON.stringify(ui.position));
+                console.log(check.top);
+                console.log(check.left);
+                VendorCheckRunController.SpacingSetting('Sec2VendorNameDrag',check.top,check.left,function(e){
+                    //alert('saved')
+                });
+            }});
+        $("#Sec2CheckNumberDrag").draggable({
+            stop: function (event, ui) {
+                var check = JSON.parse(JSON.stringify(ui.position));
+                console.log(check.top);
+                console.log(check.left);
+                VendorCheckRunController.SpacingSetting('Sec2CheckNumberDrag',check.top,check.left,function(e){
+                    //alert('saved')
+                });
+            }});
+        $("#Sec2").draggable({
+            stop: function (event, ui) {
+                var check = JSON.parse(JSON.stringify(ui.position));
+                console.log(check.top);
+                console.log(check.left);
+                VendorCheckRunController.SpacingSetting('Sec2',check.top,check.left,function(e){
+                    //alert('saved')
+                });
+            }});
+        $("#Sec3VendorNameDrag").draggable({
+            stop: function (event, ui) {
+                var check = JSON.parse(JSON.stringify(ui.position));
+                console.log(check.top);
+                console.log(check.left);
+                VendorCheckRunController.SpacingSetting('Sec3VendorNameDrag',check.top,check.left,function(e){
+                    //alert('saved')
+                });
+            }});
+        $("#Sec3CheckNumberDrag").draggable({
+            stop: function (event, ui) {
+                var check = JSON.parse(JSON.stringify(ui.position));
+                console.log(check.top);
+                console.log(check.left);
+                VendorCheckRunController.SpacingSetting('Sec3CheckNumberDrag',check.top,check.left,function(e){
+                    //alert('saved')
+                });
+            }});
+        $("#Sec3").draggable({
+            stop: function (event, ui) {
+                var check = JSON.parse(JSON.stringify(ui.position));
+                console.log(check.top);
+                console.log(check.left);
+                VendorCheckRunController.SpacingSetting('Sec3',check.top,check.left,function(e){
+                    //alert('saved')
+                });
+            }});
+        $("#vendorBillingAddressDrag").draggable({
+            stop: function (event, ui) {
+                var check = JSON.parse(JSON.stringify(ui.position));
+                console.log(check.top);
+                console.log(check.left);
+                VendorCheckRunController.SpacingSetting('vendorBillingAddressDrag',check.top,check.left,function(e){
+                    //alert('saved')
+                });
+            }});
+        
+        
+        
+    } );
+    </script>
+    <apex:includeScript value="{!URLFOR($Resource.jQuery_UI,'/jquery-ui-1.10.3.custom/js/jquery-3.2.1.min.js')}"/>  
+    <head>
+        <style>
+            p {
+            text-indent:10px;
+            }
+            body {
+            page-break-before:always;
+            }
+            pre {
+            display: inline;
+            }
+            @page{
+            margin:0in;
+            }
+            tr.spaceAboveCheckNum > td {
+            padding-top: 1.2em;
+            }
+            tr.spaceAbove > td {
+            padding-top: 0.6em;
+            }
+            tr.spaceAbovePay > td {
+            padding-top: 1.0em;
+            }
+            .totalAmount{
+            font-size:1.3em;
+            }
+            .page-break:not(:last-child) {
+            display:block;
+            overflow:hidden;
+            page-break-after:always;
+            }
+            .page-break2:not(:last-child) {
+            display:block;
+            overflow:hidden;
+            page-break-after:always;
+            }
+        </style>
+    </head>
+    <body>  
+        <div style="width:816px;border-style:groove;">
+            <div class="page-break" style="position:relative; height:1056px;">  <!-- standard 11in page height (@100dpi) -->
+                <br/>
+                <br/>
+                <apex:outputText value="PREVIEW" rendered="{!checkPreview==true}"/>
+                <div id="CheckNumberDrag" class="ui-widget-content" style="cursor:all-scroll;position:relative;width:12%;left:{!spacing.section1_check_number_left__c}px;top:{!spacing.section1_check_number_top__c}px;">
+                    Check Number
+                </div> 
+                <div id="CheckDateDrag" class="ui-widget-content" style="cursor:all-scroll;position:relative;width:12%;left:{!spacing.date_left__c}px;top:{!spacing.date_top__c}px;">
+                    Check Date
+                </div>
+                <div id="AmountDrag" class="ui-widget-content" style="cursor:all-scroll;position:relative;width:12%;left:{!spacing.section1_amount_left__c}px;top:{!spacing.section1_amount_top__c}px;">
+                    <b>
+                        Amount
+                    </b>
+                </div>
+                <div id="AmountInWordDrag" class="ui-widget-content" style="cursor:all-scroll;position:relative;width:16%;left:{!spacing.amount_in_words_left__c}px;top:{!spacing.amount_in_words_top__c}px;">
+                    <b>Amount in words</b>
+                </div>
+                
+                <div id="VendorNameDrag" class="ui-widget-content" style="cursor:all-scroll;position:relative;width:14%;left:{!spacing.section1_vendor_name_left__c}px;top:{!spacing.section1_vendor_name_top__c}px;">
+                    Vendor Name
+                </div>
+                <div id="vendorBillingAddressDrag" class="ui-widget-content" style="cursor:all-scroll;position:relative;width:14%;left:{!spacing.vendor_billing_address_left__c }px;top:{!spacing.vendor_billing_address_top__c }px;">
+                    Vendor Billing Address
+                </div>
+                
+                <div id="Sec2VendorNameDrag" class="ui-widget-content" style="cursor:all-scroll;position:relative;width:20%;left:{!spacing.section2_vendor_name_left__c}px;top:{!spacing.section2_vendor_name_top__c}px;">
+                    Section2 Vendor Name
+                </div>
+                <div id="Sec2CheckNumberDrag" class="ui-widget-content" style="cursor:all-scroll;position:relative;width:20%;left:{!spacing.section2_check_number_left__c}px;top:{!spacing.section2_check_number_top__c}px;">
+                    Section2 Check Number
+                </div>
+                <div id="Sec2" class="ui-widget-content" style="cursor:all-scroll;position:relative;width:100%;left:{!spacing.section2_left__c}px;top:{!spacing.section2_top__c}px;">
+                    <table style="width:100%;position:relative;">
+                        <tr>
+                            <td width="40%"></td>
+                            <td width="20%"></td>
+                            <td width="20%"></td>
+                            <td width="20%"></td>
+                        </tr>
+                        <tr>
+                            <td>Section2</td>
+                            <td>PO Number</td>
+                            <td>Description</td>
+                            <td>Amount</td>
+                        </tr>
+                        <tr>
+                            <td>Invoice # testInvoice1 - 27/7/2017</td>
+                            <td></td>
+                            <td>Notes</td>
+                            <td>100.00</td>
+                        </tr>
+                        <tr>
+                            <td>Invoice # testInvoice2 - 27/7/2017</td>
+                            <td></td>
+                            <td>Notes</td>
+                            <td>100.00</td>
+                        </tr>
+                        <tr>
+                            <td>Invoice # testInvoice3 - 27/7/2017</td>
+                            <td></td>
+                            <td>Notes</td>
+                            <td>100.00</td>
+                        </tr>
+                        <tr>
+                            <td>Invoice # testInvoice4 - 27/7/2017</td>
+                            <td></td>
+                            <td>Notes</td>
+                            <td>100.00</td>
+                        </tr>
+                        <tr>
+                            <td>Invoice # testInvoice4 - 27/7/2017</td>
+                            <td></td>
+                            <td>Notes</td>
+                            <td>100.00</td>
+                        </tr>
+                        <tr>
+                            <td>1234 - financial account</td>
+                            <td></td>
+                            <td></td>
+                            <td>500.00</td>
+                        </tr>
+                        <tr>
+                            <td>1235 - financial account 1</td>
+                            <td></td>
+                            <td></td>
+                            <td>500.00</td>
+                        </tr>
+                    </table>
+                </div>
+                <div id="Sec3VendorNameDrag" class="ui-widget-content" style="cursor:all-scroll;position:relative;width:20%;left:{!spacing.section3_vendor_name_left__c}px;top:{!spacing.section3_vendor_name_top__c}px;">
+                    Section3 Vendor Name
+                </div>
+                
+                <div id="Sec3CheckNumberDrag" class="ui-widget-content" style="cursor:all-scroll;position:relative;width:20%;left:{!spacing.section3_check_number_left__c}px;top:{!spacing.section3_check_number_top__c}px;">
+                    Section3 Check Number
+                </div>
+                
+                <div id="Sec3" class="ui-widget-content" style="width:100%;cursor:all-scroll;left:{!spacing.section3_left__c}px;top:{!spacing.section3_top__c}px;">
+                    <table style="width:100%;position:relative;">
+                        <tr>
+                            <td width="40%"></td>
+                            <td width="20%"></td>
+                            <td width="20%"></td>
+                            <td width="20%"></td>
+                        </tr>
+                        <tr>
+                            <td>Section3</td>
+                            <td>PO Number</td>
+                            <td>Description</td>
+                            <td>Amount</td>
+                        </tr>
+                        <tr>
+                            <td>Invoice # testInvoice1 - 27/7/2017</td>
+                            <td></td>
+                            <td>Notes</td>
+                            <td>100.00</td>
+                        </tr>
+                        <tr>
+                            <td>Invoice # testInvoice2 - 27/7/2017</td>
+                            <td></td>
+                            <td>Notes</td>
+                            <td>100.00</td>
+                        </tr>
+                        <tr>
+                            <td>Invoice # testInvoice3 - 27/7/2017</td>
+                            <td></td>
+                            <td>Notes</td>
+                            <td>100.00</td>
+                        </tr>
+                        <tr>
+                            <td>Invoice # testInvoice4 - 27/7/2017</td>
+                            <td></td>
+                            <td>Notes</td>
+                            <td>100.00</td>
+                        </tr>
+                        <tr>
+                            <td>Invoice # testInvoice4 - 27/7/2017</td>
+                            <td></td>
+                            <td>Notes</td>
+                            <td>100.00</td>
+                        </tr>
+                        <tr>
+                            <td>1234 - financial account</td>
+                            <td></td>
+                            <td></td>
+                            <td>500.00</td>
+                        </tr>
+                        <tr>
+                            <td>1235 - financial account 1</td>
+                            <td></td>
+                            <td></td>
+                            <td>500.00</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </body>
+</apex:page>

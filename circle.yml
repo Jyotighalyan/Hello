@@ -1,0 +1,19 @@
+machine:
+  node:
+    version: v6.1.0
+
+dependencies:
+  override:
+    - npm install
+    - npm run package
+
+test:
+  override:
+    - npm run destroy
+
+deployment:
+  production:
+    branch: /.*/
+    commands:
+      - npm run deploy
+      

@@ -1,0 +1,195 @@
+<apex:page showHeader="true" sidebar="true" standardController="Bank_Deposit__c" extensions="CheckDepositController">
+    <!-- Scripts -->
+    <apex:includeScript value="{!URLFOR($Resource.jQuery_UI,'/jquery-ui-1.10.3.custom/js/jquery-3.2.1.min.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.jQuery_UI,'/jquery-ui-1.10.3.custom/js/jquery-ui-1.10.3.custom.min.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.jQuery_UI,'jquery-ui-1.10.3.custom/js/jquery.dataTables.1.10.15.js')}"/>
+    
+    <!--Styles-->
+    <apex:stylesheet value="{!URLFOR($Resource.jQuery_UI, '/jquery-ui-1.10.3.custom/css/ui-lightness/jquery-ui-1.10.3.custom.min.css')}"/>
+    <apex:stylesheet value="{!URLFOR($Resource.jQuery_UI, 'jquery-ui-1.10.3.custom/css/ui-lightness/jquery.dataTables.1.10.15.css')}"/>
+    <script>
+    var j$ = jQuery.noConflict();
+    j$('table.PAYTABLE').dataTable({
+        'iDisplayLength':200,
+        'aLengthMenu':[[-1],['All']]
+    });
+    </script>
+    <script>
+    function getPermissionFirstForPosting(){
+        if(confirm("Are you sure want to post this batch?")){
+            PostBatch();
+        }
+        return;
+    }
+    </script>
+    
+    
+    <apex:form id="theForm">
+        <apex:actionStatus id="WORKING">
+            <apex:facet name="start">
+                <div class="waitingSearchDiv" style="background-color: #000;height: 100%;filter: alpha(opacity=50);opacity:0.5;width:100%;"></div>
+                <div class="waitingSearchDiv" style="z-index:999;width:100%"> 
+                    <div class="waitingHolder" style="z-index:999;top: 175px; left: 20px; width: 200px;height: 25px;background-color: #fff;border: 1px solid black;border-radius: 5px;padding-top: 10px;color: #000;">
+                        <span class="waitingDescription" style="color:#000;">Working...</span>
+                        <img class="waitingImage" src="/img/loading.gif" title="Please Wait..." />
+                    </div>
+                </div> 
+            </apex:facet>
+        </apex:actionStatus>
+        <apex:outputPanel id="MESSAGES">
+            <apex:pageMessages ></apex:pageMessages>
+        </apex:outputPanel>
+        <apex:pageBlock id="information">
+            <apex:pageBlockSection title="Deposit Batch Information" id="DBIPBS">
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Bank Account"/>
+                    <apex:inputField value="{!bd.Financial_Account__c}"/>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Slip Number"/>
+                    <apex:outputPanel >
+                        <apex:inputField value="{!bd.Deposit_Slip_Number__c}" />
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:inputField value="{!bd.Deposit_Date__c}">
+                    <!--<apex:actionSupport event="onchange" action="{!updateCheckDates}" reRender="PAYPBTABLE"/>-->
+                </apex:inputField>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Load Previous Unposted Batch"/>
+                    <apex:selectList value="{!selectedPastBD}" size="1">
+                        <apex:selectOptions value="{!unPostedBDSO}"/>
+                        <apex:actionSupport event="onchange" status="WORKING" action="{!setPastBankDepsoit}" reRender="PAYPBTABLE,Buttons,Buttons1,totalSection,totalSection2,information"/>
+                    </apex:selectList>
+                </apex:pageBlockSectionItem>                
+            </apex:pageBlockSection>
+        </apex:pageBlock>
+        <apex:pageMessage severity="INFO" strength="1" summary="Note: All payments will be auto-applied to the member accounts, starting with the oldest open charges"/>
+        <apex:pageBlock id="Buttons" >
+            <apex:pageBlockSection columns="2">
+                <apex:commandButton status="WORKING" value="Save Deposit Batch" action="{!saveCheckDepositPayments}" reRender="MESSAGES"></apex:commandButton>
+                <apex:commandButton rendered="{!canIPost}" onclick="getPermissionFirstForPosting();" status="WORKING" value="Post Deposit Batch" reRender="MESSAGES"></apex:commandButton>
+                <apex:actionFunction status="WORKING" name="PostBatch" action="{!PostBatch}" rerender="MESSAGES">
+                </apex:actionFunction> 
+            </apex:pageBlockSection>
+            
+        </apex:pageBlock>
+        <apex:pageBlock id="totalSection">
+            <apex:pageBlockSection >
+                <apex:outputText label="Deposit Total" value="{0, number, ###,###,##0.00}">
+                    <apex:param value="{!bd.Total__c}"></apex:param>
+                </apex:outputText>
+                <apex:outputLabel value="*Only Rows with a Member will be included in the total"></apex:outputLabel>
+            </apex:pageBlockSection>
+        </apex:pageBlock>
+        <script language="javascript">
+        function setRequired(amount,checkNumber,checkDate,index){
+            if(document.getElementById(amount).value==0 || document.getElementById(amount).value==''){
+                document.getElementById(amount).value ='0';
+            }
+            if(document.getElementById(checkNumber).value=='' || document.getElementById(checkNumber).value=='0'){
+                document.getElementById(checkNumber).value ='0';
+            }
+            
+            if(document.getElementById(checkDate).value=='8/1/2017' || document.getElementById(checkDate).value==''){
+                document.getElementById(checkDate).value ='8/1/2017';
+            }
+            
+            callAction(index);
+        }
+        </script>
+        <apex:actionFunction name="callAction" action="{!makeAmountFieldBlank}" rerender="PAYPBTABLE,totalSection,totalSection2,apscriptop">
+            <apex:param name="indexParam" value="" assignTo="{!cObjIndex}"/>
+        </apex:actionFunction>
+        <apex:pageBlock >
+            <apex:pageBlockTable styleClass="PAYTABLE" value="{!payListV}" var="p" id="PAYPBTABLE">
+                <apex:column >
+                    <apex:commandLink value="Del" status="WORKING" action="{!delMember}" reRender="PAYPBTABLE,CheckBatchPBS,totalSection,totalSection2,apscriptop">
+                        <apex:param name="p1" value="{!p.index}" assignTo="{!cObjIndex}" />
+                    </apex:commandLink>
+                </apex:column>
+                
+                <apex:column headerValue="Member">
+                    <apex:inputField styleClass="MEM{!p.index}" value="{!p.BCDP.Customer__c}" style="width:200px;" onchange="setRequired('{!$Component.amount}','{!$Component.checknumber}','{!$Component.checkdate}',{!p.index});">
+                    </apex:inputField> 
+                </apex:column>
+                <apex:column headerValue="Amount">
+                    <apex:inputField id="amount" value="{!p.BCDP.Amount__c}" style="width:100px;" required="{!p.BCDP.Customer__c!=null}" >
+                        
+                    </apex:inputField>
+                </apex:column>
+                <apex:column headerValue="Check Number">
+                    <apex:inputField id="checknumber" value="{!p.BCDP.Check_Number__c}" style="width:100px;"  required="{!p.BCDP.Customer__c!=null}"/>
+                    <!--<apex:inputText value="{!p.pay.Check_Number__c}" style="width:110px;"></apex:inputText>-->
+                </apex:column>
+                <apex:column headerValue="Check Date">
+                    <apex:inputField id="checkdate" value="{!p.BCDP.Check_Date__c}" style="width:70px;" required="{!p.BCDP.Customer__c!=null}">
+                        <apex:actionSupport event="onchange" action="{!recalcTotal}" reRender="PAYPBTABLE,totalSection,totalSection2,apscriptop">
+                        </apex:actionSupport>
+                    </apex:inputField>
+                </apex:column>
+                
+                
+            </apex:pageBlockTable>
+            <apex:commandButton status="WORKING" value="Add more" action="{!addMoreRows}" reRender="PAYPBTABLE"></apex:commandButton>
+        </apex:pageBlock>
+        <apex:pageBlock id="totalSection2">
+            <apex:pageBlockSection >
+                <apex:outputText label="Deposit Total" value="{0, number, ###,###,##0.00}">
+                    <apex:param value="{!bd.Total__c}"></apex:param>
+                </apex:outputText>
+                <apex:outputLabel value="*Only Rows with a Member will be included in the total"></apex:outputLabel>
+            </apex:pageBlockSection>
+        </apex:pageBlock>
+        <apex:pageBlock id="Buttons1" >
+            <apex:pageBlockSection columns="2">
+                <apex:commandButton status="WORKING" value="Save Deposit Batch" action="{!saveCheckDepositPayments}" reRender="MESSAGES"></apex:commandButton>
+                <apex:commandButton rendered="{!canIPost}" onclick="getPermissionFirstForPosting();" status="WORKING" value="Post Deposit Batch" reRender="MESSAGES"></apex:commandButton>
+            </apex:pageBlockSection>
+            
+        </apex:pageBlock>
+        <apex:pageBlock id="MergeBatchBlock">
+            <apex:pageblocksection columns="1" id="section1"  title="Merge batch" >
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Select batch to merge with"/>
+                    <apex:selectList value="{!selectedPastBDForMerge}" size="1">
+                        <apex:selectOptions value="{!unPostedBDSOForMerge}"/>
+                        <apex:actionSupport event="onchange" status="WORKING" action="{!getDetailOfBatchToMerge}" reRender="MergeTable"/>
+                    </apex:selectList>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:pageBlockTable value="{!payListToMergeV}" var="p" id="MergeTable">
+                        <apex:column headerValue="Member">
+                            {!p.BCDP.Customer__r.Name}
+                        </apex:column>
+                        <apex:column headerValue="Amount">
+                            {!p.BCDP.Amount__c}
+                        </apex:column>
+                        <apex:column headerValue="Check Number">
+                            {!p.BCDP.Check_Number__c}
+                        </apex:column>
+                        <apex:column headerValue="Check Date">
+                            <apex:outputText value="{0,date,MM/dd/yyyy}" >
+                                <apex:param value="{!p.BCDP.Check_Date__c}" />
+                            </apex:outputText>
+                        </apex:column>
+                    </apex:pageBlockTable>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:commandButton value="Merge Both Batches" onclick="getPermissionFirst();" reRender="MESSAGES"></apex:commandButton>
+                </apex:pageBlockSectionItem>
+                <script>
+                function getPermissionFirst(){
+                    if(confirm("Are you sure want to merge both batches?")){
+                        MergeCall();
+                    }
+                    return;
+                }
+                </script>
+                
+                <apex:actionFunction status="WORKING" name="MergeCall" action="{!MergeBoth}" rerender="MESSAGES">
+                </apex:actionFunction>
+                
+            </apex:pageblocksection>
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>

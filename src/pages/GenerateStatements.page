@@ -1,0 +1,173 @@
+<apex:page docType="html-5.0" showHeader="true" sidebar="true" controller="GenerateStatementController">
+	<head>
+		<apex:includescript value="{!URLFOR($Resource.jqueryDatatable_3embed,'/3embed/jquery-1.11.1.min.js')}" />
+		<apex:includeScript value="{!URLFOR($Resource.jQuery_UI,'/jquery-ui-1.10.3.custom/js/jquery-ui-1.10.3.custom.min.js')}"/>
+		<apex:stylesheet value="{!URLFOR($Resource.fontawesome,'/css/font-awesome.css')}"/>
+		<apex:stylesheet value="{!URLFOR($Resource.foretees, '/ProgressBar/progressbar.css')}"/>
+		<apex:stylesheet value="{!URLFOR($Resource.jQuery_UI,'/jquery-ui-1.10.3.custom/css/pepper-grinder/jquery-ui.min.css')}"/>
+	</head>
+	<style>
+	.ui-datepicker-calendar {
+    	display: none;
+	}
+	fieldset{
+	border:none;
+	margin-top: -7px;
+	}
+	</style>
+	<script>
+	function generateStat()
+	{
+		generateStatement('Confirm');
+	}
+
+	function refresh()
+	{
+		window.location.href = "{!HTMLENCODE(JSENCODE($Page.GenerateStatements))}";
+	}
+
+	function cancelPage()
+	{
+		window.location.href = "{!HTMLENCODE(JSENCODE($Page.FinancialLandingPage))}";
+	}
+	</script>
+	<br/>
+	<apex:outputLink id="link" styleClass="tooltip" value="/{!$Page.FinancialLandingPage}">Financial Landing Page </apex:outputLink>&nbsp; <i class="fa fa-angle-right" aria-hidden="true"></i>&nbsp; Generate Statements setup
+	<br/>
+	<br/>
+	<apex:actionStatus id="WORKING">
+      <apex:facet name="start">
+          <div class="waitingSearchDiv" style="background-color: #000;
+              height: 100%;filter: alpha(opacity=50);opacity:0.5;width:100%;">
+          </div>
+          <div class="waitingSearchDiv" style="z-index:999;width:100%">
+              <div class="waitingHolder" style="z-index:999;top: 175px; left: 20px; width: 200px;height: 25px;background-color: #fff;border: 1px solid black;border-radius: 5px;padding-top: 10px;color: #000;">
+                  <span class="waitingDescription" style="color:#000;">Working...</span>
+                  <img class="waitingImage" src="/img/loading.gif" title="Please Wait..." />
+              </div>
+          </div>
+      </apex:facet>
+	</apex:actionStatus>
+	<apex:pageBlock id="stmt">
+		<apex:outputPanel id="batch" rendered="{!IF(batchId!=null,true,false)}">
+			<c:BatchStatus bachId="{!batchId}" url="GenerateStatements"/>
+		</apex:outputPanel>
+		<apex:form >
+		<apex:actionFunction name="generateStatement" status="WORKING" action="{!generate}" reRender="stmt">
+			<apex:param name="status" value="" assignTo="{!status}"/>
+		</apex:actionFunction>
+		<apex:actionFunction name="cancel" status="WORKING" action="{!cancel}" reRender="stmt"/>
+		<apex:pageMessages id="msgs"/>
+		<apex:pageBlockSection title="Test" showHeader="true" rendered="false">
+            <apex:pageBlockSectionItem >
+                <apex:outputText value="Label" />
+                <apex:outputText value="Value" />
+            </apex:pageBlockSectionItem>
+        </apex:pageBlockSection>
+		<apex:outputPanel styleClass="head">
+			<apex:pageBlockSection title="Statements Generation" columns="1">
+				<br/>
+				<apex:pageBlockSectionItem >
+					<apex:outputLabel value="Statement Summary Name : "/>
+					<apex:outputPanel >
+						<div class="requiredInput"><div class="requiredBlock"/>
+							<apex:inputField value="{!statementSummaryRec.Statement_Summary_Name__c}"/>
+						</div>
+					</apex:outputPanel>
+				</apex:pageBlockSectionItem>
+				<apex:pageBlockSectionItem >
+					<label>Date :</label>
+					<apex:outputPanel >
+						<div class="requiredInput"><div class="requiredBlock"/>
+							<input name="startDate" id="startDate" class="date-picker" />
+						</div>
+					</apex:outputPanel>
+				</apex:pageBlockSectionItem>
+			</apex:pageBlockSection>
+			<br/>
+			<table style="width:50%">
+				<tbody>
+					<tr>
+						<td style="width:90%"></td>
+						<td><apex:commandButton value="Generate Statements" onclick="generateStat(); return false"/></td>
+						<td><apex:commandButton value="Cancel" onclick="cancelPage(); return false"/></td>
+						<td style="width:10%"></td>
+					</tr>	
+				</tbody>	
+			</table>
+		</apex:outputPanel>
+		<apex:inputHidden id="checkHere" value="{!monthYear}"/>
+		</apex:form>
+		<script>
+		var monthNames = ["January", "February", "March", "April", "May", "June",
+  				"July", "August", "September", "October", "November", "December"
+			];
+			if($('[id$=checkHere]').val()!='' && $('.date-picker').val()==''){
+				var monthyear = $('[id$=checkHere]').val();
+				var put;
+				if(monthyear.split(' ').length>0){
+					put = monthNames[monthyear.split(' ')[1]]+' '+monthyear.split(' ')[0];
+					$('.date-picker').val(put);
+				}
+			}
+			$('.date-picker').datepicker({
+        		dateFormat: "MM yy",
+        		changeMonth: true,
+        		changeYear: true,
+        		yearRange: "-1:+10",
+        		showButtonPanel: true,
+        		onClose: function (dateText, inst) {
+	        		function isDonePressed() {
+	                return ($('#ui-datepicker-div').html().indexOf('ui-datepicker-close ui-state-default ui-priority-primary ui-corner-all ui-state-hover') > -1);
+            		}
+	            	if (isDonePressed()) {
+	                var month = $("#ui-datepicker-div .ui-datepicker-month :selected").val();
+	                var year = $("#ui-datepicker-div .ui-datepicker-year :selected").val();
+	                $(this).datepicker('setDate', new Date(year, month, 1)).trigger('change');
+
+	                $('.date-picker').focusout() //Added to remove focus from datepicker input box on selecting date
+	                $('[id$=checkHere]').val(year+' '+month);
+	            	}
+        		},
+        		beforeShow: function (input, inst) {
+            		inst.dpDiv.addClass('month_year_datepicker')
+
+            		if ((datestr = $(this).val()).length > 0) {
+	                datestr = datestr.split(" ");
+	                year = datestr[1];
+	                month = monthNames.indexOf(datestr[0]);
+	                $(this).datepicker('option', 'defaultDate', new Date(year, month, 1));
+	                $(this).datepicker('setDate', new Date(year, month, 1));
+	                $(".ui-datepicker-calendar").hide();
+            		}
+        		}
+    	})
+
+		if('{!confirmOnDup}'=='true' && '{!JSENCODE(status)}'=='Confirm')
+		{
+			if(confirm('A statement summary already exists for this date. Do you want to overwrite it and replace it with the newest statements?')){
+				generateStatement('Generate');
+			}
+			else{
+				cancel();
+			}
+		}
+		if('{!callRegenerate}'=='true' && '{!JSENCODE(HTMLENCODE(status))}'=='Confirm')
+		{
+			if(confirm('Statement summary for this period can not be regenerated. Do you want to run UpdateStatementsBatch?')){
+				generateStatement('Update');
+			}
+			else{
+				cancel();
+			}
+		}
+		if('{!noTxnsFound}'=='true' && '{!JSENCODE(HTMLENCODE(status))}'=='Update'){
+			alert('There were no new TXNs found for this period. Statements cannot be regenerated.');
+			refresh();
+		}
+		if('{!afterStmtError}'=='true'){
+			alert('A statement summary after this period already exist. Please try to delete all before generating this month Statements.');
+		}
+		</script>
+	</apex:pageBlock>
+</apex:page>

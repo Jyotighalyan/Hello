@@ -1,0 +1,191 @@
+<apex:page showHeader="true" controller="CreditBookSetupController" sidebar="true">
+	<head>
+		<apex:stylesheet value="{!URLFOR($Resource.fontawesome,'/css/font-awesome.css')}"/>
+		<apex:stylesheet value="{!URLFOR($Resource.foretees, '/ProgressBar/progressbar.css')}"/>
+	</head>
+	<style>
+		.headertable td 
+		{               
+			padding: 7px;
+			padding-top: 0px;
+		}
+		.headertable
+		{               
+			box-shadow: 3px 7px 15px #137ea0;
+		}
+		body .bPageBlock .pbBody .red .pbSubheader{
+       		background-color:#1797c0;
+    	}
+	</style>
+	 <script>
+
+     function cancel()
+     {
+        window.location.href = "/{!JSENCODE(HTMLENCODE(memberRecord.id))}";
+     }
+
+    </script>
+    <apex:sectionHeader rendered="{!IF(memberRecord!=null, true, false)}" title="Credit Book Setup" subtitle="{!memberRecord.Name}" />
+    <apex:outputLink rendered="{!IF(memberRecord!=null, true, false)}" id="link" styleClass="tooltip" value="/{!memberRecord.id}"> {!memberRecord.Name}  </apex:outputLink><apex:outputLink rendered="{!IF(memberRecord==null, true, false)}" id="link1" styleClass="tooltip" value="/{!$Page.FinancialLandingPage}"> <br/>FinancialLandingPage  </apex:outputLink> &nbsp; <i class="fa fa-angle-right" aria-hidden="true"></i>&nbsp; Credit Book Setup
+    <br/> <br/>
+    <apex:actionStatus id="WORKING" >
+        <apex:facet name="start">
+            <div class="waitingSearchDiv" style="background-color: #000;
+                height: 100%;filter: alpha(opacity=50);opacity:0.5;width:100%;">
+            </div>
+            <div class="waitingSearchDiv" style="z-index:999;width:100%">
+                <div class="waitingHolder" style="z-index:999;top: 175px; left: 20px; width: 200px;height: 25px;background-color: #fff;border: 1px solid black;border-radius: 5px;padding-top: 10px;color: #000;">
+                    <span class="waitingDescription" style="color:#000;">Working...</span>
+                    <img class="waitingImage" src="/img/loading.gif" title="Please Wait..." />
+                </div>
+            </div>
+        </apex:facet>
+    </apex:actionStatus>  
+    <apex:form id="frm">
+    <apex:actionFunction status="WORKING" name="saveCredit" action="{!save}" reRender="frm">
+    	<apex:param name="type" value=""/>
+    </apex:actionFunction>
+    <apex:pageBlock rendered="{!IF($CurrentPage.parameters.from=='profilePage', true, false)}">
+    	<apex:pageMessage strength="2" severity="info" summary="{!$CurrentPage.parameters.message}" rendered="{!IF($CurrentPage.parameters.message==null, false, true)}"/>
+    	<apex:pageMessages id="msgs"/>
+        <apex:outputPanel styleClass="red">
+    	<apex:pageBlockSection columns="1" title="Credits Balance">
+    		<br/>
+    		<apex:outputPanel >
+	    		<table width="100%" class="headertable">
+			    		<apex:repeat value="{!totalCreditBookSum}" var="creditTypes">
+				    			<td>
+				                    <p>{!creditTypes} Credit Book</p>
+				                    <p>{!currrencySymbol}<span style="display:none" id='{!creditTypes}'>{!totalCreditBookSum[creditTypes]}</span><b><apex:outputText value="{!totalCreditBookSum[creditTypes]}"/></b></p>
+			            		</td>
+			    		</apex:repeat>
+	    		</table>
+    		</apex:outputPanel>
+    	</apex:pageBlockSection>
+    	</apex:outputPanel>
+    	<br/>
+    	<br/>
+    	<apex:outputPanel styleClass="red">
+    	<apex:pageBlockSection title="Create Credit" columns="1">
+    		<br/>
+    		<apex:pageBlockSectionItem >
+    			<apex:outputLabel value="Credit Book Type : "/>
+    			<apex:outputPanel >
+    				<div class="requiredInput"><div class="requiredBlock"/><apex:inputField value="{!creditRecord.CreditBookType__c}"/></div>
+    			</apex:outputPanel>
+    		</apex:pageBlockSectionItem>
+    		<apex:pageBlockSectionItem >
+    			<apex:outputLabel value="Amount({!currrencySymbol}) : "/>
+    			<apex:outputPanel >
+    				<div class="requiredInput"><div class="requiredBlock"/><apex:inputField value="{!creditRecord.Credit_Amount__c}"/></div>
+    			</apex:outputPanel>
+    		</apex:pageBlockSectionItem>
+    		<apex:pageBlockSectionItem >
+    			<apex:outputLabel value="Date : "/>
+    			<apex:outputPanel >
+    				<div class="requiredInput"><div class="requiredBlock"/><apex:inputField value="{!creditRecord.Date__c}"/></div>
+    			</apex:outputPanel>
+    		</apex:pageBlockSectionItem>
+    		<apex:pageBlockSectionItem >
+    			<apex:outputLabel value="Expiration Date : "/>
+    			<apex:outputPanel >
+    				<apex:inputField value="{!creditRecord.Expiry_Dates__c}"/>
+    			</apex:outputPanel>
+    		</apex:pageBlockSectionItem>
+    		<apex:pageBlockSectionItem >
+    			<apex:outputLabel value="Description  : "/>
+    			<apex:outputPanel >
+    				<div class="requiredInput"><div class="requiredBlock"/><apex:inputField value="{!creditRecord.Description__c}"/></div>
+    			</apex:outputPanel>
+    		</apex:pageBlockSectionItem>
+    		</apex:pageBlockSection>
+    		<br/>
+    		<br/>
+    		<apex:pageBlockSection columns="1">
+    			<apex:outputPanel >
+		    		<table width="100%">
+		    			<thead>
+		    				<td style="width :30%;"></td>
+				            <td><apex:commandButton value="Create Credit" onclick="saveCredit('memberPage'); return false"  style=" width: 203px;height: 30px; color:white;background:#1797c0;"/>
+				            <apex:commandButton value="Cancel" onclick="cancel(); return false"  style=" width: 203px;height: 30px; color:white;background:#1797c0;"/></td>
+			            </thead>
+		        	</table>
+	        	</apex:outputPanel>
+        	</apex:pageBlockSection>
+    	</apex:outputPanel>
+    </apex:pageBlock>
+    <apex:pageBlock rendered="{!IF($CurrentPage.parameters.from=='financialLandingPage', true, false)}">
+    <apex:pageMessages id="msgs"/>
+    <apex:pageMessage strength="2" severity="info" summary="{!$CurrentPage.parameters.message}" rendered="{!IF($CurrentPage.parameters.message==null, false, true)}"/>
+    	<apex:outputPanel styleClass="head">
+    	<apex:pageBlockSection title="Create Credit" columns="1">
+    		<br/>
+    		<apex:pageBlockSectionItem >
+    			<apex:outputLabel value="Credit Book Type : "/>
+    			<apex:outputPanel >
+    				<div class="requiredInput"><div class="requiredBlock"/><apex:inputField value="{!creditRecord.CreditBookType__c}"/></div>
+    			</apex:outputPanel>
+    		</apex:pageBlockSectionItem>
+    		<apex:pageBlockSectionItem >
+    			<apex:outputLabel value="Amount({!currrencySymbol}) : "/>
+    			<apex:outputPanel >
+    				<div class="requiredInput"><div class="requiredBlock"/><apex:inputField value="{!creditRecord.Credit_Amount__c}"/></div>
+    			</apex:outputPanel>
+    		</apex:pageBlockSectionItem>
+    		<apex:pageBlockSectionItem >
+    			<apex:outputLabel value="Date : "/>
+    			<apex:outputPanel >
+    				<div class="requiredInput"><div class="requiredBlock"/><apex:inputField value="{!creditRecord.Date__c}"/></div>
+    			</apex:outputPanel>
+    		</apex:pageBlockSectionItem>
+    		<apex:pageBlockSectionItem >
+    			<apex:outputLabel value="Expiration Date : "/>
+    			<apex:outputPanel >
+    				<apex:inputField value="{!creditRecord.Expiry_Dates__c}"/>
+    			</apex:outputPanel>
+    		</apex:pageBlockSectionItem>
+    		<apex:pageBlockSectionItem >
+    			<apex:outputLabel value="Description  : "/>
+    			<apex:outputPanel >
+    				<div class="requiredInput"><div class="requiredBlock"/><apex:inputField value="{!creditRecord.Description__c}"/></div>
+    			</apex:outputPanel>
+    		</apex:pageBlockSectionItem>
+    		<apex:pageBlockSectionItem >
+    			<apex:outputLabel value="Add to Members : "/>
+    			<apex:outputPanel id="memtable">
+    				<table>
+    					<tbody>
+    						<apex:repeat value="{!membersToAdd}" var="mem">
+    							<tr>
+    								<th><apex:inputField value="{!mem.Member_ID__c}"/></th>
+    							</tr>
+    						</apex:repeat>
+    					</tbody>
+    				</table>
+    			</apex:outputPanel>
+    		</apex:pageBlockSectionItem>
+    		<apex:outputPanel >
+    			<table width="100%">
+		    		<thead>
+		    			<th style="width : 30%"></th>
+		    			<th><apex:commandButton status="WORKING" action="{!addMembers}" value="Add member?" reRender="memtable"/></th>
+		    		</thead>
+	    		</table>
+    		</apex:outputPanel>
+    		<apex:outputPanel >
+	    		<table width="100%">
+		    		<thead>
+		    			<th><apex:commandButton onclick="saveCredit('saveFinancial'); return false" value="Save"/>&nbsp;<apex:commandButton onclick="saveCredit('saveNewFinancial'); return false" value="Save & New"/></th>
+		    		</thead>
+	    		</table>
+    		</apex:outputPanel>
+    		</apex:pageBlockSection>
+    	</apex:outputPanel>
+    	<script>
+    	if('{!noMember}'=='true'){
+    		alert('Please select the members on whom you want to add this credit.');
+    	}
+    	</script>
+    </apex:pageBlock>
+    </apex:form>
+</apex:page>

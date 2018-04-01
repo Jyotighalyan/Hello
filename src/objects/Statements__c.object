@@ -1,0 +1,424 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <actionOverrides>
+        <actionName>Accept</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>CancelEdit</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>Clone</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>Delete</actionName>
+        <content>StatementsDetail</content>
+        <skipRecordTypeSelect>false</skipRecordTypeSelect>
+        <type>Visualforce</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>Edit</actionName>
+        <content>StatementsDetail</content>
+        <skipRecordTypeSelect>false</skipRecordTypeSelect>
+        <type>Visualforce</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>Follow</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>List</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>New</actionName>
+        <content>StatementsDetail</content>
+        <skipRecordTypeSelect>false</skipRecordTypeSelect>
+        <type>Visualforce</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>SaveEdit</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>Tab</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>View</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <allowInChatterGroups>false</allowInChatterGroups>
+    <compactLayoutAssignment>SYSTEM</compactLayoutAssignment>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <description>the object is used to store member statements</description>
+    <enableActivities>true</enableActivities>
+    <enableBulkApi>true</enableBulkApi>
+    <enableFeeds>false</enableFeeds>
+    <enableHistory>false</enableHistory>
+    <enableReports>true</enableReports>
+    <enableSearch>true</enableSearch>
+    <enableSharing>true</enableSharing>
+    <enableStreamingApi>true</enableStreamingApi>
+    <fields>
+        <fullName>AddressId__c</fullName>
+        <deleteConstraint>SetNull</deleteConstraint>
+        <externalId>false</externalId>
+        <label>AddressId</label>
+        <referenceTo>Address__c</referenceTo>
+        <relationshipLabel>Statements</relationshipLabel>
+        <relationshipName>Statements</relationshipName>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>Lookup</type>
+    </fields>
+    <fields>
+        <fullName>Address__c</fullName>
+        <externalId>false</externalId>
+        <formula>IF(ISBLANK(AddressId__c), &apos;&apos;, IF( ISBLANK( AddressId__r.Addressee__c ) ,  Member__r.Full_Member_Name__c , AddressId__r.Addressee__c)&amp;
+IF( ISBLANK( AddressId__r.Street_1__c ) , &apos;&apos;, &apos; &apos; &amp; AddressId__r.Street_1__c)&amp;
+IF( ISBLANK( AddressId__r.Street_2__c ) , &apos;&apos;, &apos; &apos; &amp; BR() &amp; AddressId__r.Street_2__c)&amp;
+IF( ISBLANK( AddressId__r.Street_3__c ) , &apos;&apos;, &apos; &apos; &amp; AddressId__r.Street_3__c)&amp;
+IF( ISBLANK( AddressId__r.City__c ) , &apos;&apos;, &apos; &apos; &amp; BR() &amp; AddressId__r.City__c )&amp;
+IF( ISBLANK( TEXT(AddressId__r.State_Province__c )) , &apos;&apos;, &apos; &apos; &amp; TEXT(AddressId__r.State_Province__c))&amp;
+IF( ISBLANK( TEXT(AddressId__r.Country__c  )) , &apos;&apos;, &apos; &apos; &amp; TEXT(AddressId__r.Country__c))&amp;
+IF( ISBLANK( AddressId__r.Zip_Postal_Code__c ) , &apos;&apos;, &apos; &apos; &amp; AddressId__r.Zip_Postal_Code__c))</formula>
+        <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
+        <label>Address</label>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>Text</type>
+        <unique>false</unique>
+    </fields>
+    <fields>
+        <fullName>Amount__c</fullName>
+        <description>the field is used to store the net amount of TXN records, it is for statement line recordtype</description>
+        <externalId>false</externalId>
+        <label>Amount</label>
+        <precision>18</precision>
+        <required>false</required>
+        <scale>2</scale>
+        <trackTrending>false</trackTrending>
+        <type>Currency</type>
+    </fields>
+    <fields>
+        <fullName>Approved__c</fullName>
+        <defaultValue>false</defaultValue>
+        <description>the field will be marked when the summary is approved</description>
+        <externalId>false</externalId>
+        <label>Approved</label>
+        <trackTrending>false</trackTrending>
+        <type>Checkbox</type>
+    </fields>
+    <fields>
+        <fullName>Bill_To_Member__c</fullName>
+        <deleteConstraint>SetNull</deleteConstraint>
+        <description>used to store a member id</description>
+        <externalId>false</externalId>
+        <label>Bill To Member</label>
+        <lookupFilter>
+            <active>false</active>
+            <filterItems>
+                <field>Contact.Record_Type_Name__c</field>
+                <operation>equals</operation>
+                <value>Member</value>
+            </filterItems>
+            <isOptional>false</isOptional>
+        </lookupFilter>
+        <referenceTo>Contact</referenceTo>
+        <relationshipLabel>Statements</relationshipLabel>
+        <relationshipName>Statements</relationshipName>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>Lookup</type>
+    </fields>
+    <fields>
+        <fullName>Billing_Period__c</fullName>
+        <description>the field is used to store the billing month and year for statement generation</description>
+        <externalId>false</externalId>
+        <label>Billing Period</label>
+        <length>255</length>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>Text</type>
+        <unique>false</unique>
+    </fields>
+    <fields>
+        <fullName>Customer__c</fullName>
+        <deleteConstraint>SetNull</deleteConstraint>
+        <description>used to store customer field of TXN in a statement line</description>
+        <externalId>false</externalId>
+        <label>Customer</label>
+        <lookupFilter>
+            <active>false</active>
+            <filterItems>
+                <field>Contact.Record_Type_Name__c</field>
+                <operation>equals</operation>
+                <value>Member</value>
+            </filterItems>
+            <isOptional>false</isOptional>
+        </lookupFilter>
+        <referenceTo>Contact</referenceTo>
+        <relationshipLabel>Statements (Customer)</relationshipLabel>
+        <relationshipName>Statements1</relationshipName>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>Lookup</type>
+    </fields>
+    <fields>
+        <fullName>Date__c</fullName>
+        <externalId>false</externalId>
+        <label>Date</label>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>Date</type>
+    </fields>
+    <fields>
+        <fullName>Description__c</fullName>
+        <description>the field is used to store description for the statement line</description>
+        <externalId>false</externalId>
+        <label>Description</label>
+        <length>32768</length>
+        <trackTrending>false</trackTrending>
+        <type>LongTextArea</type>
+        <visibleLines>2</visibleLines>
+    </fields>
+    <fields>
+        <fullName>From_MemberId__c</fullName>
+        <description>describes the from member id</description>
+        <externalId>false</externalId>
+        <label>From MemberId</label>
+        <length>255</length>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>Text</type>
+        <unique>false</unique>
+    </fields>
+    <fields>
+        <fullName>Member_Membership_Type__c</fullName>
+        <externalId>false</externalId>
+        <formula>TEXT( Member__r.Membership_Type__c)</formula>
+        <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
+        <label>Member Membership Type</label>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>Text</type>
+        <unique>false</unique>
+    </fields>
+    <fields>
+        <fullName>Member__c</fullName>
+        <deleteConstraint>SetNull</deleteConstraint>
+        <description>only for member statement recordtype</description>
+        <externalId>false</externalId>
+        <label>Member</label>
+        <lookupFilter>
+            <active>false</active>
+            <filterItems>
+                <field>Contact.Record_Type_Name__c</field>
+                <operation>equals</operation>
+                <value>Member</value>
+            </filterItems>
+            <isOptional>false</isOptional>
+        </lookupFilter>
+        <referenceTo>Contact</referenceTo>
+        <relationshipLabel>Statements (Member)</relationshipLabel>
+        <relationshipName>MemberStatements</relationshipName>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>Lookup</type>
+    </fields>
+    <fields>
+        <fullName>Membership_Type__c</fullName>
+        <description>the field is used to store the membership types generated for a particular billing period</description>
+        <externalId>false</externalId>
+        <label>Membership Type</label>
+        <picklist>
+            <picklistValues>
+                <fullName>--None--</fullName>
+                <default>false</default>
+            </picklistValues>
+            <sorted>false</sorted>
+        </picklist>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>MultiselectPicklist</type>
+        <visibleLines>8</visibleLines>
+    </fields>
+    <fields>
+        <fullName>RelatedTo_For_Adjustment__c</fullName>
+        <description>The field is used for development purpose</description>
+        <externalId>false</externalId>
+        <label>RelatedTo For Adjustment</label>
+        <length>255</length>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>Text</type>
+        <unique>false</unique>
+    </fields>
+    <fields>
+        <fullName>Service_Charge__c</fullName>
+        <defaultValue>0</defaultValue>
+        <externalId>false</externalId>
+        <label>Service Charge</label>
+        <precision>18</precision>
+        <required>false</required>
+        <scale>2</scale>
+        <trackTrending>false</trackTrending>
+        <type>Currency</type>
+    </fields>
+    <fields>
+        <fullName>Statement_Balance__c</fullName>
+        <description>the field is used to store balance of the member attached</description>
+        <externalId>false</externalId>
+        <label>Statement Balance</label>
+        <precision>18</precision>
+        <required>false</required>
+        <scale>2</scale>
+        <trackTrending>false</trackTrending>
+        <type>Currency</type>
+    </fields>
+    <fields>
+        <fullName>Statement_Summary_Name__c</fullName>
+        <description>contains the name of the summary record</description>
+        <externalId>false</externalId>
+        <label>Statement Summary Name</label>
+        <length>255</length>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>Text</type>
+        <unique>false</unique>
+    </fields>
+    <fields>
+        <fullName>Statement__c</fullName>
+        <deleteConstraint>SetNull</deleteConstraint>
+        <externalId>false</externalId>
+        <label>Statement</label>
+        <referenceTo>Statements__c</referenceTo>
+        <relationshipLabel>Statements</relationshipLabel>
+        <relationshipName>Statements</relationshipName>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>Lookup</type>
+    </fields>
+    <fields>
+        <fullName>Tax__c</fullName>
+        <defaultValue>0</defaultValue>
+        <externalId>false</externalId>
+        <label>Tax</label>
+        <precision>18</precision>
+        <required>false</required>
+        <scale>2</scale>
+        <trackTrending>false</trackTrending>
+        <type>Currency</type>
+    </fields>
+    <fields>
+        <fullName>To_Date__c</fullName>
+        <externalId>false</externalId>
+        <label>To Date</label>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>Date</type>
+    </fields>
+    <fields>
+        <fullName>To_MemberId__c</fullName>
+        <description>describes to memberId</description>
+        <externalId>false</externalId>
+        <label>To MemberId</label>
+        <length>255</length>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>Text</type>
+        <unique>false</unique>
+    </fields>
+    <fields>
+        <fullName>Total_Amount__c</fullName>
+        <externalId>false</externalId>
+        <label>Total Amount</label>
+        <precision>18</precision>
+        <required>false</required>
+        <scale>2</scale>
+        <trackTrending>false</trackTrending>
+        <type>Currency</type>
+    </fields>
+    <fields>
+        <fullName>Type__c</fullName>
+        <externalId>false</externalId>
+        <label>Type</label>
+        <length>255</length>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>Text</type>
+        <unique>false</unique>
+    </fields>
+    <label>Statement</label>
+    <listViews>
+        <fullName>All</fullName>
+        <columns>NAME</columns>
+        <columns>Statement_Summary_Name__c</columns>
+        <columns>RECORDTYPE</columns>
+        <columns>Billing_Period__c</columns>
+        <columns>Date__c</columns>
+        <columns>To_Date__c</columns>
+        <columns>CREATED_DATE</columns>
+        <filterScope>Everything</filterScope>
+        <filters>
+            <field>RECORDTYPE</field>
+            <operation>equals</operation>
+            <value>Statements__c.Statement_Summary</value>
+        </filters>
+        <label>All</label>
+    </listViews>
+    <nameField>
+        <displayFormat>Stmt-{0000000}</displayFormat>
+        <label>Statements Name</label>
+        <type>AutoNumber</type>
+    </nameField>
+    <pluralLabel>Statements</pluralLabel>
+    <recordTypes>
+        <fullName>Member_Statement</fullName>
+        <active>true</active>
+        <description>recordtype is used to create a member statement</description>
+        <label>Member Statement</label>
+        <picklistValues>
+            <picklist>Membership_Type__c</picklist>
+            <values>
+                <fullName>--None--</fullName>
+                <default>false</default>
+            </values>
+        </picklistValues>
+    </recordTypes>
+    <recordTypes>
+        <fullName>Statement_Line</fullName>
+        <active>true</active>
+        <description>recordtype is used to create statement line in a member statement</description>
+        <label>Statement Line</label>
+        <picklistValues>
+            <picklist>Membership_Type__c</picklist>
+            <values>
+                <fullName>--None--</fullName>
+                <default>false</default>
+            </values>
+        </picklistValues>
+    </recordTypes>
+    <recordTypes>
+        <fullName>Statement_Summary</fullName>
+        <active>true</active>
+        <description>recordtype is used to create a summary record to link multiple member statements</description>
+        <label>Statement Summary</label>
+        <picklistValues>
+            <picklist>Membership_Type__c</picklist>
+            <values>
+                <fullName>--None--</fullName>
+                <default>false</default>
+            </values>
+        </picklistValues>
+    </recordTypes>
+    <searchLayouts>
+        <customTabListAdditionalFields>Statement_Summary_Name__c</customTabListAdditionalFields>
+        <customTabListAdditionalFields>RECORDTYPE</customTabListAdditionalFields>
+        <customTabListAdditionalFields>Billing_Period__c</customTabListAdditionalFields>
+    </searchLayouts>
+    <sharingModel>ReadWrite</sharingModel>
+</CustomObject>

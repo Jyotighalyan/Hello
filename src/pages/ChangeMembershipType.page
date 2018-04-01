@@ -1,0 +1,190 @@
+<apex:page showHeader="true" sidebar="true" controller="ChangeMembershipTypeController">
+    <head>
+        <apex:includescript value="{!URLFOR($Resource.jqueryDatatable_3embed,'/3embed/jquery-1.11.1.min.js')}" />
+        <apex:stylesheet value="{!URLFOR($Resource.fontawesome,'/css/font-awesome.css')}"/>
+        <apex:stylesheet value="{!URLFOR($Resource.foretees, '/ProgressBar/progressbar.css')}"/>
+    </head>
+    <style>
+        .arrow { color:silver !important; text-decoration:underline; cursor:pointer; cursor:hand; }
+        .arrow { font-size:7px; text-decoration:none; position:relative;}
+        .arrow { font-size:0.9em;}
+        .arrow:hover {color:#7a80dd !important;}
+    </style>
+    <br/>
+    <apex:outputLink id="link" styleClass="tooltip" value="/{!$Page.FinancialLandingPage}">Financial Landing Page </apex:outputLink>&nbsp; <i class="fa fa-angle-right" aria-hidden="true"></i>&nbsp; Change Membership Type
+    <br/>
+    <br/>
+    <apex:actionStatus id="WORKING">
+      <apex:facet name="start">
+          <div class="waitingSearchDiv" style="background-color: #000;
+              height: 100%;filter: alpha(opacity=50);opacity:0.5;width:100%;">
+          </div>
+          <div class="waitingSearchDiv" style="z-index:999;width:100%">
+              <div class="waitingHolder" style="z-index:999;top: 175px; left: 20px; width: 200px;height: 25px;background-color: #fff;border: 1px solid black;border-radius: 5px;padding-top: 10px;color: #000;">
+                  <span class="waitingDescription" style="color:#000;">Working...</span>
+                  <img class="waitingImage" src="/img/loading.gif" title="Please Wait..." />
+              </div>
+          </div>
+      </apex:facet>
+    </apex:actionStatus>
+    <apex:pageBlock >
+        <apex:pageMessages id="msgs"/>
+        <apex:form >
+         <apex:actionFunction name="sort" status="WORKING" action="{!doSort}" reRender="memListSection">
+            <apex:param name="columnName" value=""/>
+            <apex:param name="description" value=""/>
+         </apex:actionFunction>
+         <apex:actionFunction name="refreshPageSize" action="{!refreshPageSize}" status="fetchStatus" reRender="memListSection"/>
+        <apex:outputPanel styleClass="head">
+            <apex:pageBlockSection columns="2" title="Search Members">
+                <apex:inputField value="{!contactRecord.Membership_Type__c}"/>
+                <apex:inputField value="{!contactRecord.Status__c}"/>
+                <apex:inputField value="{!contactRecord.Substatus__c}"/>
+                <apex:inputField value="{!contactRecord.Relationship__c}"/>
+            </apex:pageBlockSection>
+            <br/>
+            <br/>
+            <table style="width:100%">
+                <thead>
+                    <tr>
+                    <td></td>
+                    <td>
+                        <apex:outputPanel id="memTypeUp">
+                        <apex:outputLabel rendered="{!isSearchSelected}" value="New Membership Type : "/>   
+                            <apex:selectList rendered="{!isSearchSelected}" value="{!selectedMemType}" size="1">
+                            <apex:selectOptions value="{!membershipTypes}"/>
+                        </apex:selectList>
+                        </apex:outputPanel>
+                    </td>
+                    <td><apex:outputPanel id="buttons">
+                        <div align="right">
+                            <apex:commandButton status="WORKING" value="Search Members" action="{!searchMembers}" reRender="memListSection, buttons, option, memTypeUp"/> &nbsp;
+                            <apex:commandButton rendered="{!isSearchSelected}" status="WORKING" id="updateMem" value="Update members" action="{!changeMT}" reRender="msgs"/> &nbsp;
+                        </div>
+                    </apex:outputPanel>
+                    </td>
+                    </tr>
+                </thead>
+            </table>
+        </apex:outputPanel>
+        <br/>
+        <table style="width:100%;">
+        <thead>
+        <tr>
+        <td style="width:0.5%"></td>
+        <td><apex:outputPanel id="option">
+            <apex:selectList rendered="{!isSearchSelected}" value="{!size}" multiselect="false" size="1" onchange="refreshPageSize();">
+             <apex:selectOptions value="{!paginationSizeOptions}"/>
+          </apex:selectList>
+        </apex:outputPanel></td></tr>
+        </thead>
+        </table>
+        <apex:outputPanel id="memListSection">
+        <apex:pageBlockSection columns="1" rendered="{!isSearchSelected}">
+            <apex:pageBlockTable value="{!listToShow}" var="memList" styleClass="memberListTable">
+                <apex:column >
+                    <apex:facet name="header">
+                        <apex:outputPanel >
+                            Name
+                            <div align="right" style="margin-top: -15px;">
+                                <apex:commandLink styleclass="arrow" style="layout: block;" onclick="sort('Name','asc'); return false"> &#9650;</apex:commandLink>
+                            </div>
+                            <div align="right" style="margin-top: -2px;">
+                                <apex:commandLink styleclass="arrow" style="layout: block" onclick="sort('Name','desc'); return false"> &#9660;</apex:commandLink>
+                            </div>
+                        </apex:outputPanel>
+                    </apex:facet>
+                    <apex:outputLink target="_blank" value="/{!memList.member.Id}">{!memList.member.Name}</apex:outputLink>
+                </apex:column>
+                <apex:column value="{!memList.member.Customer_Id__c}">
+                    <apex:facet name="header">
+                        <apex:outputPanel >
+                            Member Id
+                            <div align="right" style="margin-top: -15px;">
+                                <apex:commandLink styleclass="arrow" style="layout: block;" onclick="sort('Customer_Id__c','asc'); return false"> &#9650;</apex:commandLink>
+                            </div>
+                            <div align="right" style="margin-top: -2px;">
+                                <apex:commandLink styleclass="arrow" style="layout: block" onclick="sort('Customer_Id__c','desc'); return false"> &#9660;</apex:commandLink>
+                            </div>
+                        </apex:outputPanel>
+                    </apex:facet>
+                </apex:column>
+                <apex:column value="{!memList.member.Relationship__c}">
+                    <apex:facet name="header">
+                        <apex:outputPanel >
+                            Relationship
+                            <div align="right" style="margin-top: -15px;">
+                                <apex:commandLink styleclass="arrow" style="layout: block;" onclick="sort('Relationship__c','asc'); return false"> &#9650;</apex:commandLink>
+                            </div>
+                            <div align="right" style="margin-top: -2px;">
+                                <apex:commandLink styleclass="arrow" style="layout: block" onclick="sort('Relationship__c','desc'); return false"> &#9660;</apex:commandLink>
+                            </div>
+                        </apex:outputPanel>
+                    </apex:facet>
+                </apex:column>
+                <apex:column value="{!memList.member.Membership_Type__c}">
+                    <apex:facet name="header">
+                        <apex:outputPanel >
+                            Membership Type
+                            <div align="right" style="margin-top: -15px;">
+                                <apex:commandLink styleclass="arrow" style="layout: block;" onclick="sort('Membership_Type__c','asc'); return false"> &#9650;</apex:commandLink>
+                            </div>
+                            <div align="right" style="margin-top: -2px;">
+                                <apex:commandLink styleclass="arrow" style="layout: block" onclick="sort('Membership_Type__c','desc'); return false"> &#9660;</apex:commandLink>
+                            </div>
+                        </apex:outputPanel>
+                    </apex:facet>
+                </apex:column>
+                <apex:column value="{!memList.member.Status__c}">
+                    <apex:facet name="header">
+                        <apex:outputPanel >
+                            Status
+                            <div align="right" style="margin-top: -15px;">
+                                <apex:commandLink styleclass="arrow" style="layout: block;" onclick="sort('Status__c','asc'); return false"> &#9650;</apex:commandLink>
+                            </div>
+                            <div align="right" style="margin-top: -2px;">
+                                <apex:commandLink styleclass="arrow" style="layout: block" onclick="sort('Status__c','desc'); return false"> &#9660;</apex:commandLink>
+                            </div>
+                        </apex:outputPanel>
+                    </apex:facet>
+                </apex:column>
+                <apex:column value="{!memList.member.Substatus__c}">
+                    <apex:facet name="header">
+                        <apex:outputPanel >
+                            Substatus
+                            <div align="right" style="margin-top: -15px;">
+                                <apex:commandLink styleclass="arrow" style="layout: block;" onclick="sort('Substatus__c','asc'); return false"> &#9650;</apex:commandLink>
+                            </div>
+                            <div align="right" style="margin-top: -2px;">
+                                <apex:commandLink styleclass="arrow" style="layout: block" onclick="sort('Substatus__c','desc'); return false"> &#9660;</apex:commandLink>
+                            </div>
+                        </apex:outputPanel>
+                    </apex:facet>
+                </apex:column>
+                <apex:column >
+                    <apex:facet name="header">
+                        <apex:outputPanel >
+                            <span style="vertical-align: super;">Select?</span> <apex:inputCheckbox title="click to select all members" value="{!isSelectAll}">
+                                <apex:actionSupport event="onchange" action="{!selectAll}" reRender="memListSection" status="WORKING"/>
+                            </apex:inputCheckbox>
+                        </apex:outputPanel>
+                    </apex:facet>
+                    <apex:inputCheckbox value="{!memList.isUpdate}"/>
+                </apex:column>
+            </apex:pageBlockTable>
+             <apex:outputPanel style="text-align:right;" layout="block">
+              <apex:commandButton value="First" reRender="memListSection" action="{!first}" disabled="{!NOT(hasPrevious)}" status="paginationStatus"/>
+              <apex:commandButton value="Previous" rerender="memListSection" action="{!previous}" disabled="{!NOT(hasPrevious)}" status="paginationStatus"/>&nbsp;Page {!pageNumber} of {!totalPages}&nbsp;
+              <apex:commandButton value="Next" rerender="memListSection" action="{!next}" disabled="{!NOT(hasNext)}" status="paginationStatus"/>
+              <apex:commandButton value="Last" rerender="memListSection" action="{!last}" disabled="{!NOT(hasNext)}" status="paginationStatus"/>
+              <apex:actionStatus id="paginationStatus">
+                 <apex:facet name="start">
+                     Please wait...<img src="/img/loading32.gif" style="width: 18px;"/>
+                 </apex:facet>
+              </apex:actionStatus>
+       </apex:outputPanel>
+        </apex:pageBlockSection>
+        </apex:outputPanel>
+        </apex:form>
+    </apex:pageBlock>
+</apex:page>

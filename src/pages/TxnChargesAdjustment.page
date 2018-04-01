@@ -1,0 +1,80 @@
+<apex:page showHeader="true" sidebar="true" controller="TxnChargesAdjustmentController">
+	<head>
+		<apex:stylesheet value="{!URLFOR($Resource.fontawesome,'/css/font-awesome.css')}"/>
+		<apex:includescript value="{!URLFOR($Resource.jqueryDatatable_3embed,'/3embed/jquery-1.11.1.min.js')}" />
+	</head>
+	<script>
+	function doCancel()
+	{
+		window.location.href = "/{!JSENCODE(HTMLENCODE(txnRecord.id))}";
+	}
+	if('{!alreadyAdjusted}'=='true')
+	{
+		alert('This due is already adjusted.');
+		doCancel();
+	}
+	</script>
+	<apex:sectionHeader title="Adjustment" subtitle="{!txnRecord.Name}" />
+	<apex:outputLink id="link" styleClass="tooltip" value="/{!txnRecord.id}">{!txnRecord.Name} </apex:outputLink>&nbsp; <i class="fa fa-angle-right" aria-hidden="true"></i>&nbsp; Adjust {!recordTypeName}
+	<br/>
+	<br/>
+	<apex:actionStatus id="WORKING" >
+        <apex:facet name="start">
+            <div class="waitingSearchDiv" style="background-color: #000;
+                height: 100%;filter: alpha(opacity=50);opacity:0.5;width:100%;">
+            </div>
+            <div class="waitingSearchDiv" style="z-index:999;width:100%">
+                <div class="waitingHolder" style="z-index:999;top: 175px; left: 20px; width: 200px;height: 25px;background-color: #fff;border: 1px solid black;border-radius: 5px;padding-top: 10px;color: #000;">
+                    <span class="waitingDescription" style="color:#000;">Working...</span>
+                    <img class="waitingImage" src="/img/loading.gif" title="Please Wait..." />
+                </div>
+            </div>
+        </apex:facet>
+    </apex:actionStatus> 
+	<apex:form >
+	<apex:pageBlock >
+		<apex:pageMessages id="Msg"/>
+		<br/>
+            <legend><b>Adjust {!recordTypeName}</b></legend>
+        <br/>
+        <br/>
+		<apex:outputPanel styleClass="red">
+			<apex:pageBlockSection rendered="{!IF(recordTypeName=='Dues', true, false)}" columns="1">
+				<apex:pageBlockSectionItem >
+					<apex:outputLabel value="Date : "/>
+					<apex:outputPanel >
+						<div class="requiredInput"><div class="requiredBlock"/><apex:inputField value="{!adjustmentTxnRecord.Date__c}"/></div>
+					</apex:outputPanel>
+				</apex:pageBlockSectionItem>
+				<apex:pageBlockSectionItem >
+					<apex:outputLabel value="Adjustment Amount : "/>
+					<apex:outputPanel >
+						<apex:outputField value="{!txnRecord.Total_Amount__c}"/>
+					</apex:outputPanel>
+				</apex:pageBlockSectionItem>
+				<apex:pageBlockSectionItem >
+					<apex:outputLabel value="Adjustment Reason : "/>
+					<apex:outputPanel >
+						<div class="requiredInput"><div class="requiredBlock"/><apex:inputField value="{!adjustmentTxnRecord.Adjustment_Reason__c}"/></div>
+					</apex:outputPanel>
+				</apex:pageBlockSectionItem>
+				<apex:pageBlockSectionItem >
+					<apex:outputLabel value="Statement Description : "/>
+					<apex:outputPanel >
+						<div class="requiredInput"><div class="requiredBlock"/><apex:inputField value="{!adjustmentTxnRecord.Statement_Description__c}"/></div>
+					</apex:outputPanel>
+				</apex:pageBlockSectionItem>
+			</apex:pageBlockSection>
+			<br/>
+			<apex:pageBlockSection columns="2">
+				<apex:outputPanel >
+				<div align="right">
+				<apex:commandButton value="Save Adjustment" action="{!saveDueAdjust}" status="WORKING" reRender="Msg"/>
+				<apex:commandButton value="Cancel" onclick="doCancel(); return false"/>
+				</div>
+				</apex:outputPanel>
+			</apex:pageBlockSection>
+		</apex:outputPanel>
+	</apex:pageBlock>
+	</apex:form>
+</apex:page>

@@ -1,0 +1,159 @@
+<apex:page sidebar="false" docType="html-5.0" controller="TaxToAccountMappingController" >
+  <head>
+      
+      <apex:includeScript value="{!URLFOR($Resource.jQuery_UI,'/jquery-ui-1.10.3.custom/js/jquery-3.2.1.min.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.jQuery_UI,'/jquery-ui-1.10.3.custom/js/jquery-ui-1.10.3.custom.min.js')}"/>
+    <apex:includeScript value="//cdn.datatables.net/1.10.15/js/jquery.dataTables.js"/>
+<apex:stylesheet value="{!URLFOR($Resource.jQuery_UI,'/jquery-ui-1.10.3.custom/css/ui-lightness/jquery-ui-1.10.3.custom.min.css')}"/>
+    <apex:stylesheet value="//cdn.datatables.net/1.10.15/css/jquery.dataTables.css"/>
+    <apex:stylesheet value="{!URLFOR($Resource.CustomStyle,'/CustomStyle.css')}" /> 
+    <apex:includescript value="https://code.jquery.com/ui/1.11.4/jquery-ui.js" /> 
+    <apex:stylesheet value="https://code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css" />
+ </head> 
+        <script>
+        j$ = jQuery.noConflict();
+        j$(document).ready(function() {
+        j$('[id$="tabs"]').tabs();
+        j$('[id$="table1"]').dataTable();
+        j$('[id$="table2"]').dataTable();
+        j$('[id$="table3"]').dataTable();
+        });
+
+        var selectedTabTitle = '';
+        j$(document).ready(function(){
+        j$( '[id$="tabs"]' ).tabs({
+            activate : function (event,ui) {
+                selectedTabTitle = ui.newTab[0].innerText;
+        }
+        });
+        })
+        
+
+        function saveOrUpdate()
+        {
+            saveUpdate(selectedTabTitle);
+        }
+
+        </script>
+        <style>
+        body {
+        background-color: #eef;
+        }
+        #tabs {
+        width: 95%;
+        margin-left: auto;
+        margin-right: auto;
+        margin-top: 10px;
+        
+        }
+        .ui-autocomplete {
+        max-height: 200px;
+        overflow-y: auto;
+        overflow-x: hidden;
+        z-index: 9999; 
+        }
+         html .ui-autocomplete {
+        height: 200px;
+        z-index: 9999; 
+       </style>
+
+    <apex:pageBlock >
+         <apex:outputPanel styleClass="red">
+             <apex:pageBlockSection title="Map Tax To Account" columns="1">
+                 <apex:form >
+                    <apex:actionFunction name="saveUpdate" action="{!save}" reRender="msg">
+                    <apex:param name="tabname" value="" assignTo="{!tabname}"/>
+                    </apex:actionFunction>
+                     <apex:pageBlockSection id="msg">
+                         <apex:pageMessages ></apex:pageMessages>
+                     </apex:pageBlockSection>
+                     <div id="tabs" style="background:6666FF">
+                         <ul>
+                             <li><a href="#tabs-1">Taxes</a>
+                             </li>
+                             <li><a href="#tabs-2">Service Charge</a>
+                             </li>
+                             <li><a href="#tabs-3">Use Taxes</a>
+                             </li>
+                         </ul>
+                         <div id="tabs-1">
+                           <apex:outputPanel >
+                                    <table id ="table1">
+                                        <thead>
+                                            <tr>
+                                                <th>Tax Id</th>
+                                                <th>Tax Name</th>
+                                                <th>Tax Values</th>
+                                                <th>Financial Accounts</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                        <apex:repeat value="{!accts}" var="a">
+                                            <tr>
+                                                <td><apex:outputLink value="/{!a.id}" >{!a.Name}</apex:outputLink></td>
+                                                <td>{!a.Tax__c}</td>
+                                                <td>{!a.Tax_Value__c}</td>
+                                                <td><div class="requiredInput"><div class="requiredBlock"></div><apex:inputField value="{!a.Financial_Accounts__c}" id="tableFinancialAccount1" style="width:85%;"/></div></td>
+                                            </tr>
+                                            </apex:repeat>
+                                     </tbody>
+                                     </table>
+                                 </apex:outputPanel>
+                         </div>
+                         <div id="tabs-2">
+                              <apex:outputPanel >
+                                 <table id ="table2" style ="width:100%" >
+                                     <thead>
+                                         <tr>
+                                             <th>Service Charge Id</th>
+                                             <th>Service Charge Name</th>
+                                             <th>Service Charge Value</th>                               
+                                             <th>Financial Account</th>
+                                         </tr>
+                                     </thead>
+                                     <tbody>         
+                                         <apex:repeat value="{!servChar}" var="a">
+                                             <tr>
+                                                 <td><apex:outputLink value="/{!a.id}" >{!a.Name}</apex:outputLink></td>
+                                                 <td>{!a.Service_Charge__c}</td>
+                                                 <td>{!a.Service_Charge_Value__c}</td>
+                                                 <td><div class="requiredInput"><div class="requiredBlock"></div><apex:inputField value="{!a.Financial_Accounts__c}" id="tableFinancialAccount" style="width:85%;"/></div></td>
+                                             </tr>
+                                         </apex:repeat>
+                                     </tbody>
+                                 </table>
+                             </apex:outputPanel>
+                         </div>
+                         <div id="tabs-3">
+                              <apex:outputPanel >
+                                 <table id ="table3" style ="width:100%" >
+                                     <thead>
+                                         <tr>
+                                             <th>Use Tax Id</th>
+                                             <th>Use Tax Name</th>
+                                             <th>Use Tax Value</th>                               
+                                             <th>Financial Account</th>
+                                         </tr>
+                                     </thead>
+                                     <tbody>         
+                                         <apex:repeat value="{!UseTaxes}" var="a">
+                                             <tr>
+                                                 <td><apex:outputLink value="/{!a.id}" >{!a.Name}</apex:outputLink></td>
+                                                 <td>{!a.UseTax_Name__c}</td>
+                                                 <td>{!a.UseTax_Value__c}</td>
+                                                 <td><div class="requiredInput"><div class="requiredBlock"></div><apex:inputField value="{!a.Financial_Accounts__c}" id="tableFinancialAccount" style="width:85%;"/></div></td>
+                                             </tr>
+                                         </apex:repeat>
+                                     </tbody>
+                                 </table>
+                             </apex:outputPanel>
+                         </div>
+                     </div> 
+                     <apex:pageBlockSection >
+                         <center><apex:commandButton value="Save/Update" onclick="saveOrUpdate(); return false;" style=" width: 203px;height: 30px;color:white;background: #6666FF;" /></center>
+                     </apex:pageBlockSection>
+                 </apex:form>
+             </apex:pageBlockSection>
+        </apex:outputPanel>
+    </apex:pageBlock>
+    </apex:page>

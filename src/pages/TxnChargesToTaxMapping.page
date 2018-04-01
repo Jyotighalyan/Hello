@@ -1,0 +1,213 @@
+<apex:page controller="TxnChargesToTaxMappingController" action="{!autoRun}">
+    <head>
+    <apex:includescript value="{!URLFOR($Resource.jqueryDatatable_3embed,'/3embed/jquery-1.11.1.min.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.jQuery_UI,'/jquery-ui-1.10.3.custom/js/jquery-ui-1.10.3.custom.min.js')}"/>  
+    <!--stylesheets-->
+    <apex:stylesheet value="{!URLFOR($Resource.jQuery_UI, '/jquery-ui-1.10.3.custom/css/ui-lightness/jquery-ui-1.10.3.custom.min.css')}"/>
+    </head>
+   
+    <style>
+        body .bPageBlock .pbBody .red .pbSubheader{                                             
+        background-color:#6666FF;           
+        }
+        .ui-autocomplete {
+        max-height: 200px;
+        overflow-y: auto;
+        overflow-x: hidden;
+        z-index: 9999; 
+        }
+        
+         /* IE 6 does not support max-height
+        * we use height instead, but this forces the menu to always be this tall
+        */
+        * html .ui-autocomplete {
+        height: 200px;
+        z-index: 9999; 
+        }
+    </style>
+  
+    <apex:pageBlock >
+        <a href='/apex/TxnAllTaxes?mp=fb'><b>Back</b></a> > <b>New Tax Mapping </b> 
+    </apex:pageBlock>
+    <apex:pageBlock id="PBLOCK">
+        <apex:form id="initialForm">
+             <script>
+                $(document).ready(function() {
+                    if($('[id$=taxOnsCharge]').prop("checked"))
+                    {
+                        $('[id$=ShowServiceChargePicklists]').show();
+                    }
+                });
+           </script>
+            
+            <apex:actionstatus id="loading">
+                <apex:facet name="stop">
+                </apex:facet>
+                <apex:facet name="start">
+                    <div class="waitingSearchDiv" id="el_loading" style="z-index:999;width:100%">
+                        <div class="waitingHolder" style="z-index:999; opacity:1.0;position:fixed;top:200px;right:50%;margin-right:-100px; width: 100px;height: 25px;background-color: #fff;border: 1px solid black;border-radius: 5px;padding-top: 10px;color: #000;">
+                            <img class="waitingImage" src="/img/loading.gif" title="Please Wait..." />
+                            <span class="waitingDescription" style="color:#000; opacity:1.0;">Working...</span>
+                        </div>
+                    </div>
+                </apex:facet>
+            </apex:actionstatus>
+
+            <apex:inputHidden value="{!chargeType}" id="companyDef"/>
+            <apex:inputHidden value="{!chargeSubType}" id="companyDef1"/>
+            <apex:pageBlock id="msgs">
+                <apex:pageMessages id="Msg" ></apex:pageMessages>
+                <div class="sec" ><apex:outputPanel styleClass="red" > 
+                    <apex:pageBlockSection collapsible="false" title="Step 1: Select The Charge" columns="1" >
+                        <apex:pageBlockSectionItem >
+                            <apex:outputLabel value="Type :" />
+                            <apex:outputPanel layout="block">                          
+                                <apex:inputField value="{!othCharge.Type__c}" onchange="selectedtype('{!$Component.ChargeType}');" id="ChargeType"></apex:inputField>
+                                <apex:actionSupport status="loading" event="onchange" action="{!Get_other_data_based_on_type}" reRender="initialForm"/>
+                            </apex:outputPanel> 
+                        </apex:pageBlockSectionItem>
+                        <apex:pageBlockSectionItem >
+                            <apex:outputLabel value="Sub Type :" />
+                            <apex:outputPanel layout="block"> 
+                                <apex:inputField value="{!othCharge.Subtype__c}" onchange="selectedsubtype('{!$Component.SubTypeOfCharge}');" id="SubTypeOfCharge"/>
+                                <apex:actionSupport status="loading" event="onchange"  action="{!Get_other_data_based_on_Subtype}" oncomplete="SelectedBox()" reRender="initialForm"/>
+                            </apex:outputPanel>
+                        </apex:pageBlockSectionItem>
+                    </apex:pageBlockSection>
+                    </apex:outputPanel>
+                </div>
+            </apex:pageBlock>
+            <apex:outputPanel styleClass="red" style="display:block" layout="block"> 
+                <apex:pageBlock >
+                    <apex:pageBlockSection collapsible="false" title="Step 2: Tax Setup" columns="2" >
+                        <apex:pageBlockSectionItem >
+                            <apex:outputPanel layout="block">
+                                <div align="center">
+                                    <apex:outputLabel value="Tax :" />
+                                    
+                                    <c:MultiselectPicklist leftLabel="Select Tax" 
+                                                           leftOption="{!AllTaxes}"
+                                                           rightLabel="Selected Tax"
+                                                           rightOption="{!SelectedTaxes}"
+                                                           size="15"
+                                                           width="330px" /> 
+                                    
+                                </div>
+                            </apex:outputPanel>
+                        </apex:pageBlockSectionItem>                                                                             
+                    </apex:pageBlockSection>
+                </apex:pageBlock>
+            </apex:outputPanel>
+            <apex:pageBlock id="srvcChrg">
+                <div class="sec" >
+                    <apex:outputPanel styleClass="red" > 
+                        <apex:pageBlockSection collapsible="false" title="Step 3: Service Charge Setup" columns="1" >
+                            <apex:pageBlockSectionItem >
+                                <apex:outputLabel value="Check if Service Charge Applicable:" />
+                                <apex:outputPanel layout="block">                          
+                                    <apex:inputCheckbox value="{!service_charge_applicable}">
+                                        <apex:actionSupport event="onchange" rerender="srvcChrg" action="{!clickSrvcCharges}"/>
+                                    </apex:inputCheckbox>
+                                </apex:outputPanel> 
+                            </apex:pageBlockSectionItem>
+                            <apex:pageBlockSectionItem id="srvcChrgList" rendered="{!serviceChargesVisible}">
+                                <apex:outputLabel value="Enter the Service Charge:" />
+                                <apex:outputPanel layout="block"> 
+                                    <apex:selectList value="{!serviceChargeName}" size="1">
+                                        <apex:selectOptions value="{!allServiceCharges}"/>
+                                    </apex:selectList>
+                                </apex:outputPanel>
+                            </apex:pageBlockSectionItem>
+                            <apex:pageBlockSectionItem id="srvcChrgTaxCheck" rendered="{!serviceChargesVisible}">
+                                <apex:outputLabel value="Check if Taxes are Applicable:" />
+                                <apex:outputPanel layout="block" > 
+                                    <apex:inputCheckbox value="{!serviceTaxesApplicable}" >
+                                        <apex:actionSupport status="loading" event="onchange" rerender="srvcChrgTaxes" action="{!clickSrvcTaxes}"/>
+                                    </apex:inputCheckbox>
+                                </apex:outputPanel>
+                            </apex:pageBlockSectionItem>
+                        </apex:pageBlockSection>
+                    </apex:outputPanel>
+                </div>
+            </apex:pageBlock>
+            <apex:outputPanel styleClass="red" style="display:block"  id="srvcChrgTaxes" layout="block"> 
+                <apex:pageBlock rendered="{!serviceChargeTaxesVisible}">
+                    <apex:pageBlockSection collapsible="false" title="Step 4: Service Charge Tax Setup" columns="2" >
+                        <apex:pageBlockSectionItem >
+                            <apex:outputPanel layout="block">
+                                <div align="center">
+                                    <apex:outputLabel value="Tax :" />
+                                    
+                                    <c:MultiselectPicklist leftLabel="Select Tax" 
+                                                           leftOption="{!CopySelectedTaxes}"
+                                                           rightLabel="Selected Tax"
+                                                           rightOption="{!selectedTaxesforServiceCharge}"
+                                                           size="15"
+                                                           width="330px" /> 
+                                    
+                                </div>
+                            </apex:outputPanel>
+                        </apex:pageBlockSectionItem>                                                                             
+                    </apex:pageBlockSection>
+                </apex:pageBlock>
+            </apex:outputPanel>
+            
+            
+            <apex:outputPanel styleClass="red" id="block2" > 
+                <div align="center">
+                    <apex:commandButton value="Save and Exit" action="{!save}" status="loading" rerender="initialForm,msgs1" style=" width: 203px;height: 30px; color:white;background:#6666FF;">
+                        <apex:param name="saveAction" value="save" assignTo="{!saveAction}"/>
+                    </apex:commandButton>
+                    <apex:outputLabel ></apex:outputLabel>
+                    <apex:commandButton value="Save and Add-More" status="loading" action="{!save}" rerender="initialForm,msgs1" style=" width: 203px;height: 30px; color:white;background:#6666FF;" >
+                        <apex:param name="saveAction" value="saveAdd" assignTo="{!saveAction}"/>
+                    </apex:commandButton>
+                </div>                                     
+            </apex:outputPanel>
+            
+            <script>        
+                 $('.ShowServiceChargeTax').hide(); 
+            if($('[id$=serviceChargeApplicable]').is(':checked')==true){ 
+                $('.ShowServiceChargeTax').show();
+            }
+             $('[id$=ShowServiceChargePicklists]').hide(); 
+            function SelectServCharge(parameter)
+            {
+             if(parameter.checked == true)
+            { 
+                $('[id$=ShowServiceChargePicklists]').show();
+            }
+            else if(parameter.checked == false)
+                {
+                $('[id$=ShowServiceChargePicklists]').hide(); 
+                }
+            }
+            </script> 
+        </apex:form>
+        
+        <script type="text/javascript">
+        
+        function selectedtype(id)
+        {
+            var full=$('[id$=ChargeType]').val() ;
+            $('[id$=companyDef]').val(full);
+        }
+        function selectedsubtype(id)
+        {
+            var full=$('[id$=SubTypeOfCharge]').val() ;
+            $('[id$=companyDef1]').val(full);
+        }
+        function SelectedBox()
+        {
+            if($('[id$=taxOnsCharge]').prop("checked")){
+                    $('[id$=ShowServiceChargePicklists]').show();
+                 }
+           else{
+           $('[id$=ShowServiceChargePicklists]').hide();
+           }
+        }
+        </script>
+    
+        
+    </apex:pageBlock>
+</apex:page>
