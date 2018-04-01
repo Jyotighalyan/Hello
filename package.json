@@ -1,0 +1,43 @@
+{
+  "name": "foreteescms",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "package": "npm run package-xml && npm run clean-metadata",
+    "build": "npm run package && npm run deploy",
+    "deploy": "node build/deploy",
+    "destroy": "node build/destroy",
+    "retrieve": "node build/retrieveByName",
+    "package-xml": "./node_modules/.bin/package-xml -n \"ForeTeesCMS\" -v \"37.0\"",
+    "clean-metadata": "./node_modules/.bin/package-xml -m -c",
+    "gulp": "gulp"
+  },
+  "license": "ISC",
+  "devDependencies": {
+    "autoprefixer": "^7.1.1",
+    "cs-jsforce": "^1.7.1",
+    "cs-jsforce-metadata-tools": "^1.2.7",
+    "fs-extra": "^0.30.0",
+    "git-rev": "^0.2.1",
+    "git-rev-sync": "^1.8.0",
+    "gulp": "^3.9.1",
+    "gulp-concat": "^2.6.1",
+    "gulp-imagemin": "^3.3.0",
+    "gulp-postcss": "^7.0.0",
+    "gulp-rename": "^1.2.2",
+    "gulp-sass": "^3.1.0",
+    "gulp-uglify": "^3.0.0",
+    "imagemin-pngquant": "^5.0.1",
+    "package-xml": "^2.1.5",
+    "pump": "^1.0.2",
+    "sinon": "^1.17.5",
+    "sync-request": "^3.0.1",
+    "zip": "^1.2.0"
+  },
+  "dependencies": {
+    "cs-jsforce-metadata-tools": "^1.2.10",
+    "fs-extra": "^0.30.0",
+    "git-rev-sync": "^1.9.0",
+    "zip": "^1.2.0"
+  }
+}
