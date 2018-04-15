@@ -7,9 +7,7 @@ dependencies:
     - npm install
     - npm run package
 
-test:
-  override:
-    - npm run destroy
+
 
 deployment:
   production:
